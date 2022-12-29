@@ -7,6 +7,10 @@
 
 *******************************************  
 
+Readme deprecated, needs update
+
+*******************************************  
+
 Dentro del Nix-Shell de la carpeta de Plutus Apps:  
 
 Compilar con:  
