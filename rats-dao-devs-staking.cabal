@@ -1,0 +1,299 @@
+cabal-version:      2.4
+Name:               rats-dao-devs-staking
+Version:            0.1.0.0
+Author:             Manuel Padilla
+Maintainer:         manuelpad@gmail.com
+Build-Type:         Simple
+Copyright:          © 2022 Manuel Padilla
+License:            Apache-2.0
+License-files:      LICENSE
+
+common lang
+  default-language:   Haskell2010
+--  default-extensions: ScopedTypeVariables
+--     DeriveFoldable
+--     DeriveFunctor
+--     DeriveGeneric
+--     DeriveLift
+--     DeriveTraversable
+--     ExplicitForAll
+--     GeneralizedNewtypeDeriving
+--     ImportQualifiedPost
+--     ScopedTypeVariables
+--     StandaloneDeriving
+    
+library
+  hs-source-dirs:      src
+  exposed-modules:    
+                      Validators.StakePlusV2.PAB.PABSimulator,
+                      Deploy,
+                      Validators.StakePlusV2.Helpers,
+                      Validators.StakePlusV2.OffChain.EndPoints,
+                      Validators.StakePlusV2.OffChain.EndPointsMaster1,
+                      Validators.StakePlusV2.OffChain.EndPointsMaster2,
+                      Validators.StakePlusV2.OffChain.EndPointsUser,
+                      Validators.StakePlusV2.OffChain.OffChainHelpers,
+                      Validators.StakePlusV2.OnChain.Core.OnChainHelpers,
+                      Validators.StakePlusV2.OnChain.Core.Validator,
+                      Validators.StakePlusV2.OnChain.TestInputsOutputs.Policy,
+                      Validators.StakePlusV2.OnChain.Tokens.Free.Policy,
+                      Validators.StakePlusV2.OnChain.Tokens.OnChainNFTHelpers,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Fund,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.FundAndMerge,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.AddScripts,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteScripts,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.UserActions.Deposit,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.UserActions.Harvest,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.UserActions.Withdraw,
+                      Validators.StakePlusV2.OnChain.Tokens.PoolID.Policy,
+                      Validators.StakePlusV2.PAB.PAB,
+                      Validators.StakePlusV2.PAB.PABSimulatorHelpers,
+                      Validators.StakePlusV2.Types.Constants,
+                      Validators.StakePlusV2.Types.DatumsValidator,
+                      Validators.StakePlusV2.Types.Examples,
+                      Validators.StakePlusV2.Types.PABParams,
+                      Validators.StakePlusV2.Types.RedeemersMint,
+                      Validators.StakePlusV2.Types.RedeemersValidator,
+                      Validators.StakePlusV2.Types.Types,
+                      Utils
+
+  --------------------
+  -- Local components
+  --------------------
+  build-depends:  
+                     
+                   
+                     cardano-api           
+                     --, cardano-cli           
+                     , cardano-addresses
+                     , cardano-crypto-class
+                     , cardano-ledger-core
+                     , cardano-ledger-alonzo
+                     , cardano-ledger-babbage
+                     , cardano-ledger-shelley
+                     , cardano-wallet-core
+                     , data-default
+                     , playground-common
+                     , plutonomy
+                     , plutus-chain-index-core
+                     , plutus-contract
+                     , plutus-core
+                     , plutus-ledger
+                     --, plutus-ledger-api
+                     , plutus-ledger-api       
+                     , plutus-ledger-constraints
+                     , plutus-script-utils
+                     , plutus-pab
+                     --, plutus-script-utils
+                     --, plutus-use-cases
+                     , plutus-tx               
+                     , plutus-tx-plugin       
+
+
+    -- , cardano-api             >=1.35
+    -- , cardano-cli             >=1.35
+    -- , cardano-ledger-alonzo
+    -- , cardano-ledger-babbage
+    -- , cardano-ledger-core
+    -- , cardano-ledger-shelley
+    -- , cardano-slotting
+    -- , ouroboros-consensus
+    -- , ouroboros-network
+    -- , plutus-ledger-api       >=1.0.0
+    -- , plutus-tx               >=1.0.0
+    -- , plutus-tx-plugin        >=1.0.0
+
+   
+    
+  ------------------------
+  -- Non-IOG dependencies
+  ------------------------
+  build-depends:
+                       aeson
+                     , base ^>= 4.14.1.0
+                     , base16-bytestring
+                     , bech32
+                     , bytestring
+                     --, curl-aeson
+                     --, network
+                     , containers
+                     , freer-extras
+                     , freer-simple
+                     , filepath
+                     -- , hashable
+                     , lens
+                     , openapi3
+                     , prettyprinter
+                     , regex
+                     -- , semigroups
+                     , serialise
+                     -- , streaming
+                     , split
+                     -- , template-haskell
+                     , text
+                     , hex-text
+                     , stm 
+                     , old-locale
+                     , time
+                     , utf8-string
+                     , directory
+                     , MissingH
+                    --  , stm , time, old-locale,directory  en test2
+                    
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
+
+
+-- executable plutus-pab-nami-demo
+--   import:         lang
+--   main-is:        Main.hs
+--   hs-source-dirs: demo/pab-nami/pab/app
+--   other-modules:  DemoContract
+--   ghc-options:    -threaded
+
+--   --------------------
+--   -- Local components
+--   --------------------
+--   build-depends:
+--     , playground-common          >=1.0.0
+--     , plutus-contract            >=1.0.0
+--     , plutus-ledger              >=1.0.0
+--     , plutus-ledger-constraints  >=1.0.0
+--     , plutus-pab                 >=1.0.0
+--     , plutus-pab-executables     >=1.0.0
+
+--   ------------------------
+--   -- Non-IOG dependencies
+--   ------------------------
+--   build-depends:
+--     , aeson
+--     , base               >=4.9 && <5
+--     , openapi3
+--     , prettyprinter
+--     , purescript-bridge
+
+-- executable plutus-pab-nami-demo-generator
+--   import:         lang
+--   main-is:        Generator.hs
+--   hs-source-dirs: demo/pab-nami/pab/app
+--   other-modules:  DemoContract
+--   ghc-options:    -threaded
+
+--   --------------------
+--   -- Local components
+--   --------------------
+--   build-depends:
+--     , playground-common          >=1.0.0
+--     , plutus-contract            >=1.0.0
+--     , plutus-ledger              >=1.0.0
+--     , plutus-ledger-constraints  >=1.0.0
+--     , plutus-pab                 >=1.0.0
+--     , plutus-pab-executables     >=1.0.0
+
+--   ------------------------
+--   -- Non-IOG dependencies
+--   ------------------------
+--   build-depends:
+--     , aeson
+--     , base                  >=4.9 && <5
+--     , openapi3
+--     , optparse-applicative
+--     , prettyprinter
+--     , purescript-bridge
+
+-- executable debug
+--   main-is: debug.hs
+--   hs-source-dirs:      app
+--   ghc-options:         -Wall
+--   build-depends:       base ^>= 4.14.1.0
+            
+
+executable deploy
+  main-is: deploy.hs
+  hs-source-dirs:
+      app
+  build-depends:
+      base ^>=4.14.1.0,
+      network,
+      rats-dao-devs-staking
+  default-language: Haskell2010
+
+-- executable deploy-individual
+--   main-is: deploy-individual.hs
+--   hs-source-dirs:
+--       app
+--   build-depends:
+--       base ^>=4.14.1.0,
+--       network,
+--       rats-dao-devs-staking
+--   default-language: Haskell2010
+
+executable simulate
+  main-is: simulate.hs
+  hs-source-dirs:
+      app
+  build-depends:
+      base ^>=4.14.1.0,
+      network,
+      rats-dao-devs-staking
+  default-language: Haskell2010
+
+
+-- executable utils-token-name
+--   main-is: utils-token-name.hs
+--   hs-source-dirs:      app
+--   ghc-options:         -Wall
+--   build-depends:       base ^>= 4.14.1.0
+--                      , rats-dao-devs-staking
+
+-- executable utils-payment-key-hash
+--   main-is: utils-payment-key-hash.hs
+--   hs-source-dirs:      app
+--   ghc-options:         -Wall
+--   build-depends:       base ^>= 4.14.1.0
+--                      , rats-dao-devs-staking
+
+-- executable utils-stake-key-hash
+--   main-is: utils-stake-key-hash.hs
+--   hs-source-dirs:      app
+--   ghc-options:         -Wall
+--   build-depends:       base ^>= 4.14.1.0
+--                      , rats-dao-devs-staking
+
+
+-- executable pab-api-server
+--   main-is: pab-api-server.hs
+--   hs-source-dirs:      app
+--   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+--   build-depends:       aeson
+--                      , base ^>= 4.14.1.0
+--                      , data-default
+--                      , freer-extras
+--                      , freer-simple
+--                      , plutus-contract
+--                      , plutus-ledger
+--                      , plutus-ledger-constraints
+--                      , plutus-pab
+--                      --, plutus-use-cases
+--                      , text
+--                      , rats-dao-devs-staking
+
+-- executable spec
+--   main-is: Spec.hs
+--   hs-source-dirs:      test
+--   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+--   build-depends:       aeson
+--                      , base ^>= 4.14.1.0
+--                      , data-default
+--                      , freer-extras
+--                      , freer-simple
+--                      , text
+
+
+
