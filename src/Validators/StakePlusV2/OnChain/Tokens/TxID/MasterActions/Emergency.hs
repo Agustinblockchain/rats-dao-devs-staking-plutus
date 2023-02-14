@@ -80,7 +80,7 @@ mkPolicy_TxID_Master_Emergency !pParams !mintRedeemerRaw !ctxRaw  =
 
                             case redeemer' of
                                 (T.RedeemerMasterEmergency redeemer) ->
-                                        validateMasterEmergency pParams ctx redeemer inputsReference_TxOut_Values_And_Datums inputs_TxOut_Values_And_Datums outputs_TxOut_Values_And_Datums
+                                    validateMasterEmergency pParams ctx redeemer inputsReference_TxOut_Values_And_Datums inputs_TxOut_Values_And_Datums outputs_TxOut_Values_And_Datums
                                 _ -> traceError "INVOP"
         then ()
         else error ()
