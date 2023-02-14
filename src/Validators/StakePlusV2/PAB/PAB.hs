@@ -20,6 +20,7 @@
 -- {-# LANGUAGE NumericUnderscores         #-}
 -- {- HLINT ignore "Use camelCase" -}
 -- {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.PAB.PAB where
 ------------------------------------------------------------------------------------------
@@ -56,6 +57,7 @@ data ValidatorContracts =
     MasterSplitFund T.PABMasterSplitFundParams |
     MasterClosePool T.PABMasterClosePoolParams |
     MasterTerminatePool T.PABMasterTerminatePoolParams |
+    MasterEmergency T.PABMasterEmergencyParams |
     MasterDeleteFund T.PABMasterDeleteFundParams |
     MasterSendBackFund T.PABMasterSendBackFundParams |
     MasterSendBackDeposit T.PABMasterSendBackDepositParams |
@@ -82,6 +84,7 @@ instance PABEffectsContractBuiltin.HasDefinitions ValidatorContracts where
             MasterSplitFund T.examplePABMasterSplitFundParams,
             MasterClosePool T.examplePABMasterClosePoolParams,
             MasterTerminatePool T.examplePABMasterTerminatePoolParams,
+            MasterEmergency T.examplePABMasterEmergencyParams,
             MasterDeleteFund T.examplePABMasterDeleteFundParams,
             MasterSendBackFund T.examplePABMasterSendBackFundParams,
             MasterSendBackDeposit T.examplePABMasterSendBackDepositParams,
@@ -103,6 +106,7 @@ instance PABEffectsContractBuiltin.HasDefinitions ValidatorContracts where
     getContract (MasterSplitFund mcpParams)=                 PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterSplitFund @() @PABEffectsContractBuiltin.Empty mcpParams
     getContract (MasterClosePool mcpParams)=                 PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterClosePool @() @PABEffectsContractBuiltin.Empty mcpParams
     getContract (MasterTerminatePool mcpParams)=             PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterTerminatePool @() @PABEffectsContractBuiltin.Empty mcpParams
+    getContract (MasterEmergency mcpParams)=             PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterEmergency @() @PABEffectsContractBuiltin.Empty mcpParams
     getContract (MasterDeleteFund mcpParams)=                PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterDeleteFund @() @PABEffectsContractBuiltin.Empty mcpParams
     getContract (MasterSendBackFund mgbfParams)=         PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterSendBackFund @() @PABEffectsContractBuiltin.Empty mgbfParams
     getContract (MasterSendBackDeposit mgbfParams)=       PABEffectsContractBuiltin.SomeBuiltin $ OffChain.masterSendBackDeposit @() @PABEffectsContractBuiltin.Empty mgbfParams

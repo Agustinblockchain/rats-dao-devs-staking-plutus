@@ -19,6 +19,7 @@
 -- {-# LANGUAGE AllowAmbiguousTypes        #-}
 -- {-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 {- HLINT ignore "Use camelCase" -}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.OnChain.Tokens.PoolID.Policy
@@ -45,7 +46,7 @@ import qualified Validators.StakePlusV2.Types.Types                         as T
 ------------------------------------------------------------------------------------------
 {-# INLINABLE mkPolicyPoolID #-}
 mkPolicyPoolID :: [T.Master] -> LedgerApiV2.TxOutRef -> BuiltinData -> BuiltinData -> ()
-mkPolicyPoolID masters txOutRef _ ctxRaw =
+mkPolicyPoolID !masters !txOutRef _ !ctxRaw =
     let
         ------------------
 
@@ -77,9 +78,11 @@ mkPolicyPoolID masters txOutRef _ ctxRaw =
     in
         if
             traceIfFalse "PPMSM"  (OnChainHelpers.signedByMasters masters info) && --  "Minting PoolID: Master's signature missing!!!"
-            traceIfFalse "UTXO" (OnChainNFTHelpers.hasInputUTxO txOutRef info && checkMinting || checkBurning) && -- "Minting PoolID: UTxO not consumed"
-            (checkMinting && OnChainNFTHelpers.validateMint_NFT_Own_CS_Any_TN ctx ) &&
-            (checkMinting || checkBurning && OnChainNFTHelpers.validateBurn_NFT_Own_CS_Any_TN ctx)
+            traceIfFalse "UTXO" ((checkMinting && OnChainNFTHelpers.hasInputUTxO txOutRef info) || checkBurning) && -- "Minting PoolID: UTxO not consumed"
+            (
+                (checkMinting && OnChainNFTHelpers.validateMint_NFT_Own_CS_Any_TN ctx ) ||
+                (checkBurning && OnChainNFTHelpers.validateBurn_NFT_Own_CS_Any_TN ctx)
+            )
 
         then ()
 

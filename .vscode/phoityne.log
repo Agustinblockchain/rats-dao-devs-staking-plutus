@@ -35,3 +35,4 @@
 2022-11-10 18:31:10.364315258000 [2512(ThreadId 20)] CRITICAL REQUEST - invalid HANDLE. eof.
 2022-11-10 19:00:13.709293097000 [21741(ThreadId 21)] ERROR APP - [CRITICAL] can not get the initial ghci prompt.
 2022-11-10 19:00:13.709690557000 [21741(ThreadId 21)] WARNING APP - InitState TerminateRequest (TerminateRequest {seqTerminateRequest = 3, typeTerminateRequest = "request", commandTerminateRequest = "terminate", argumentsTerminateRequest = Just (TerminateArguments {restartTerminateRequestArguments = Just False})}) not supported. nop.
+2023-01-26 19:30:44.018553033000 [8538(ThreadId 21)] ERROR APP - cabal: runProcess: chdir: does not exist (No such file or directory)

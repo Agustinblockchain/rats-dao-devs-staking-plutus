@@ -19,6 +19,7 @@
 -- {-# LANGUAGE AllowAmbiguousTypes        #-}
 -- {-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 {- HLINT ignore "Use camelCase" -}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.OnChain.Tokens.Free.Policy

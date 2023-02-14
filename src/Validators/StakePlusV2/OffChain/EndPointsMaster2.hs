@@ -22,6 +22,7 @@
 
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.OffChain.EndPointsMaster2 where
 ------------------------------------------------------------------------------------------
@@ -49,12 +50,12 @@ import qualified Validators.StakePlusV2.Helpers                             as H
 -- import qualified Validators.StakePlusV2.OnChain.Tokens.Free.Policy          as FreePolicy
 import qualified Validators.StakePlusV2.OnChain.Tokens.OnChainNFTHelpers    as OnChainNFTHelpers
 import qualified Validators.StakePlusV2.OffChain.OffChainHelpers            as OffChainHelpers
-import qualified Validators.StakePlusV2.Types.Constants                     as T -- (fundID_TN, userID_TN, tokenNameLenght, maxDiffTokensForPoolAndFundDatum, poolID_TN, txID_Master_AddScripts_TN, txID_Master_DeleteScripts_TN, validTimeRange, poolDatum_NotTerminated, txID_Master_FundAndMerge_TN, txID_Master_SplitFund_TN, txID_Master_ClosePool_TN, txID_Master_TerminatePool_TN, txID_Master_DeleteFund_TN, txID_Master_SendBackFund_TN, txID_Master_SendBackDeposit_TN, txID_Master_AddScripts_TN, poolDatum_ClaimedFund)
-import qualified Validators.StakePlusV2.Types.DatumsValidator               as T -- (TxOut_Value_And_Datum, DatumValidator (PoolDatum, FundDatum, ScriptDatum), PoolDatumTypo (..), FundDatumTypo (..), UserDatumTypo (..), mkFundDatum, mkPoolDatum, ScriptDatumTypo (ScriptDatumTypo), ScriptDatumTypo (..), MasterFunder (..))
-import qualified Validators.StakePlusV2.Types.RedeemersMint                 as T -- (mkRedeemerMint_TxID, mkRedeemerBurn_TxID)
-import qualified Validators.StakePlusV2.Types.RedeemersValidator            as T -- (redeemerValidatorToBuiltinData, mkRedeemerMasterFundAndMerge, mkRedeemerMasterFund, mkRedeemerMasterAddScripts, mkRedeemerMasterFund, mkRedeemerMasterFundAndMerge,  mkRedeemerMasterSplitFund, mkRedeemerMasterClosePool, mkRedeemerMasterTerminatePool, mkRedeemerMasterDeleteFund, mkRedeemerMasterSendBackFund, mkRedeemerMasterSendBackDeposit, mkRedeemerMasterAddScripts, mkRedeemerMasterDeleteScripts)
-import qualified Validators.StakePlusV2.Types.PABParams                     as T -- (PABPoolParams (..), PABMasterMintFreeParams (..), PABMasterPreparePoolParams (..), PABMasterFundParams (..), PABMasterFundAndMergeParams (..), PABMasterSplitFundParams (..), PABMasterClosePoolParams (..), PABMasterTerminatePoolParams (..), PABMasterDeleteFundParams (..), PABMasterSendBackFundParams (..), PABMasterSendBackDepositParams (..), PABMasterAddScriptsParams (..), PABMasterDeleteScriptsParams (..))
-import qualified Validators.StakePlusV2.Types.Types                         as T -- (Master, PoolParams (..))
+import qualified Validators.StakePlusV2.Types.Constants                     as T 
+import qualified Validators.StakePlusV2.Types.DatumsValidator               as T 
+import qualified Validators.StakePlusV2.Types.RedeemersMint                 as T 
+import qualified Validators.StakePlusV2.Types.RedeemersValidator            as T 
+import qualified Validators.StakePlusV2.Types.PABParams                     as T 
+import qualified Validators.StakePlusV2.Types.Types                         as T 
 import qualified Utils
 
 ------------------------------------------------------------------------------------------
@@ -85,19 +86,17 @@ masterDeleteFund T.PABMasterDeleteFundParams{..} = do
         -- !policy_TxID_Master_DeleteFund = T.pppPolicy_TxID_Master_DeleteFund pabParams
     ---------------------
         !poolID_CS = T.ppPoolID_CS pParams
-        !poolID_TN = T.poolID_TN
-        !poolID_AC = LedgerValue.assetClass poolID_CS poolID_TN
+        !poolID_AC = LedgerValue.AssetClass (poolID_CS, T.poolID_TN)
     ----------------------
         !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabParams
-        !fundID_TN = T.fundID_TN
-        !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+        !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
     ---------------------
-        !txID_Master_AddScripts_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
-        !txID_Master_AddScripts_AC = LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.txID_Master_AddScripts_TN)
+        !scriptID_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
+        !scriptID_AC = LedgerValue.AssetClass (scriptID_CS, T.scriptID_TN)
     ---------------------
-        !scriptID_Validator_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Validator_TN)
-        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_DeleteFund_TN)
-        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_Fund_TN)
+        !scriptID_Validator_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Validator_TN)
+        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_DeleteFund_TN)
+        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_Fund_TN)
     ---------------------
         !txID_Master_DeleteFund_CS =  T.pppCurSymbol_TxID_Master_DeleteFund pabParams
         !txID_Master_DeleteFund_AC = LedgerValue.AssetClass (txID_Master_DeleteFund_CS, T.txID_Master_DeleteFund_TN)
@@ -112,7 +111,7 @@ masterDeleteFund T.PABMasterDeleteFundParams{..} = do
     ---------------------
     uTxOsAtValidator <- PlutusContract.utxosAt validatorAddress
     ---------------------
-    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Validator_AC uTxOsAtValidator
+    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Validator_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_ScriptDatum <-
         case uTxO_With_ScriptDatum' of
@@ -122,7 +121,7 @@ masterDeleteFund T.PABMasterDeleteFundParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with Main Validator Script: %s" (P.show $ fst uTxO_With_ScriptDatum)
                 return uTxO_With_ScriptDatum
     ---------------------
-    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_Fund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_Fund_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_Master_Fund <-
         case uTxO_With_Script_Master_Fund' of
@@ -132,7 +131,7 @@ masterDeleteFund T.PABMasterDeleteFundParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with 'Master Fund' Minting Script: %s" (P.show $ fst uTxO_With_Script_Master_Fund)
                 return uTxO_With_Script_Master_Fund
     ---------------------
-    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_Master_DeleteFund <-
         case uTxO_With_Script_Master_DeleteFund' of
@@ -190,7 +189,7 @@ masterDeleteFund T.PABMasterDeleteFundParams{..} = do
         !value_For_PoolDatum = value_In_PoolDatum <> value_In_FundDatum_To_Delete <> value_For_Mint_TxID_Master_DeleteFund <> value_For_Burn_TxID_FundID
     ---------------------
         !poolDatum_In = Helpers.getPoolDatumTypo_FromMaybeDatum $ OffChainHelpers.getDatumFromDecoratedTxOut $ snd uTxO_With_PoolDatum
-        !poolDatum_Out = Helpers.mkUpdated_PoolDatum_With_DeletingFunds poolDatum_In mergingCount mergingCashedOut
+        !poolDatum_Out = T.PoolDatum $ Helpers.mkUpdated_PoolDatum_With_DeletingFunds poolDatum_In mergingCount mergingCashedOut
     ---------------------
         !redeemer_For_Consuming_Validator_Datum = T.mkRedeemerMasterDeleteFund master
         !redeemer_For_Mint_TxID_Master_DeleteFund = T.mkRedeemerMint_TxID redeemer_For_Consuming_Validator_Datum
@@ -270,14 +269,13 @@ masterSendBackFund T.PABMasterSendBackFundParams{..} = do
         !haverstIsWithoutTokenName = not harvestIsAda && T.ppHarvest_TN pParams == LedgerApiV2.TokenName emptyByteString
     ------------------------------------------
         !poolID_CS = T.ppPoolID_CS pParams
-        !poolID_TN = T.poolID_TN
-        !poolID_AC = LedgerValue.assetClass poolID_CS poolID_TN
+        !poolID_AC = LedgerValue.AssetClass (poolID_CS, T.poolID_TN)
     ---------------------
-        !txID_Master_AddScripts_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
-        !txID_Master_AddScripts_AC = LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.txID_Master_AddScripts_TN)
+        !scriptID_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
+        !scriptID_AC = LedgerValue.AssetClass (scriptID_CS, T.scriptID_TN)
     ---------------------
-        !scriptID_Validator_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Validator_TN)
-        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackFund_TN)
+        !scriptID_Validator_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Validator_TN)
+        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackFund_TN)
     ---------------------
         !txID_Master_SendBackFund_CS =  T.pppCurSymbol_TxID_Master_SendBackFund pabParams
         !txID_Master_SendBackFund_AC = LedgerValue.AssetClass (txID_Master_SendBackFund_CS, T.txID_Master_SendBackFund_TN)
@@ -292,7 +290,7 @@ masterSendBackFund T.PABMasterSendBackFundParams{..} = do
     ---------------------
     uTxOsAtValidator <- PlutusContract.utxosAt validatorAddress
     ---------------------
-    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Validator_AC uTxOsAtValidator
+    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Validator_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_ScriptDatum <-
         case uTxO_With_ScriptDatum' of
@@ -302,7 +300,7 @@ masterSendBackFund T.PABMasterSendBackFundParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with Main Validator Script: %s" (P.show $ fst uTxO_With_ScriptDatum)
                 return uTxO_With_ScriptDatum
     ---------------------
-    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_Master_SendBackFund <-
         case uTxO_With_Script_Master_SendBackFund' of
@@ -362,7 +360,7 @@ masterSendBackFund T.PABMasterSendBackFundParams{..} = do
     ---------------------
         !value_For_PoolDatum = value_In_PoolDatum <> value_For_Mint_TxID_Master_SendBackFund <> negate value_For_SendBackFund_To_Master
     ---------------------
-        !poolDatum_Out = Helpers.mkUpdated_PoolDatum_With_SendBackFund poolDatum_In master_To_SendBack
+        !poolDatum_Out = T.PoolDatum $ Helpers.mkUpdated_PoolDatum_With_SendBackFund poolDatum_In master_To_SendBack
     ---------------------
         !redeemer_For_Consuming_Validator_Datum = T.mkRedeemerMasterSendBackFund master master_To_SendBack
         !redeemer_For_Mint_TxID_Master_SendBackFund = T.mkRedeemerMint_TxID redeemer_For_Consuming_Validator_Datum
@@ -441,23 +439,20 @@ masterSendBackDeposit T.PABMasterSendBackDepositParams{..} = do
         !stakingIsWithoutTokenName = not stakingIsAda && T.ppStaking_TN pParams == LedgerApiV2.TokenName emptyByteString
     ------------------------------------------
         !poolID_CS = T.ppPoolID_CS pParams
-        !poolID_TN = T.poolID_TN
-        !poolID_AC = LedgerValue.assetClass poolID_CS poolID_TN
+        !poolID_AC = LedgerValue.AssetClass (poolID_CS, T.poolID_TN)
     ---------------------
         !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabParams
-        !fundID_TN = T.fundID_TN
-        !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+        !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
     ---------------------
         !userID_CS = T.pppCurSymbol_TxID_User_Deposit pabParams
-        !userID_TN = T.userID_TN
-        !userID_AC = LedgerValue.assetClass userID_CS userID_TN
+        !userID_AC = LedgerValue.AssetClass (userID_CS, T.userID_TN) 
     ---------------------
-        !txID_Master_AddScripts_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
-        !txID_Master_AddScripts_AC = LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.txID_Master_AddScripts_TN)
+        !scriptID_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
+        !scriptID_AC = LedgerValue.AssetClass (scriptID_CS, T.scriptID_TN)
         ---------------------
-        !scriptID_Validator_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Validator_TN)
-        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackDeposit_TN)
-        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Deposit_TN)
+        !scriptID_Validator_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Validator_TN)
+        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackDeposit_TN)
+        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Deposit_TN)
     ---------------------
         !txID_Master_SendBackDeposit_CS =  T.pppCurSymbol_TxID_Master_SendBackDeposit pabParams
         !txID_Master_SendBackDeposit_AC = LedgerValue.AssetClass (txID_Master_SendBackDeposit_CS, T.txID_Master_SendBackDeposit_TN)
@@ -474,7 +469,7 @@ masterSendBackDeposit T.PABMasterSendBackDepositParams{..} = do
     ---------------------
     uTxOsAtValidator <- PlutusContract.utxosAt validatorAddress
     ---------------------
-    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Validator_AC uTxOsAtValidator
+    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Validator_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_ScriptDatum <-
         case uTxO_With_ScriptDatum' of
@@ -484,7 +479,7 @@ masterSendBackDeposit T.PABMasterSendBackDepositParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with Main Validator Script: %s" (P.show $ fst uTxO_With_ScriptDatum)
                 return uTxO_With_ScriptDatum
     ---------------------
-    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_Master_SendBackDeposit <-
         case uTxO_With_Script_Master_SendBackDeposit' of
@@ -494,7 +489,7 @@ masterSendBackDeposit T.PABMasterSendBackDepositParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with 'Master Send Back Deposit' Minting Script: %s" (P.show $ fst uTxO_With_Script_Master_SendBackDeposit)
                 return uTxO_With_Script_Master_SendBackDeposit
     ---------------------
-    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Deposit_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Deposit_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_User_Deposit <-
         case uTxO_With_Script_User_Deposit' of
@@ -556,7 +551,7 @@ masterSendBackDeposit T.PABMasterSendBackDepositParams{..} = do
     ---------------------
         !value_For_SendBackDeposit_To_User = value_InvestAmountPlusAda
     ---------------------
-        -- !value_ForKeepTxID_User_Harvest = Helpers.valueFromCurrencySymbol value_In_UserDatum txID_User_Harvest_CS
+        -- !value_ForKeepTxID_User_Harvest = Helpers.getValueOfCurrencySymbol value_In_UserDatum txID_User_Harvest_CS
     ---------------------
         !value_For_Burn_UserID = LedgerValue.assetClassValue userID_AC (-1)
     ---------------------
@@ -696,12 +691,25 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
     ---------------------
     let
         !pabParams = pmasPABPoolParams
-        -- !pParams = T.pppPoolParams pabParams
+        !pParams = T.pppPoolParams pabParams
         -- !policy_PoolID = T.pppPolicy_PoolID pabParams
         -- !validatorHash = T.pppValidatorHash pabParams
         !validatorAddress = T.pppValidatorAddress  pabParams
     ---------------------
+        !poolID_CS = T.ppPoolID_CS pParams
+        !poolID_AC = LedgerValue.AssetClass (poolID_CS, T.poolID_TN)
+    ---------------------
     uTxOsAtValidator <- PlutusContract.utxosAt validatorAddress
+    ---------------------
+    !uTxO_With_PoolDatum' <- OffChainHelpers.getUTxO_With_PoolDatum poolID_AC uTxOsAtValidator
+    ---------------------
+    !uTxO_With_PoolDatum <-
+        case uTxO_With_PoolDatum' of
+            Nothing -> do
+                PlutusContract.throwError "Can't find any uTxO with PoolDatum"
+            Just uTxO_With_PoolDatum -> do
+                PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with PoolDatum: %s" (P.show $ fst uTxO_With_PoolDatum)
+                return uTxO_With_PoolDatum
     ---------------------
     let
         !policy_TxID_Master_Fund = T.pppPolicy_TxID_Master_Fund pabParams
@@ -709,6 +717,7 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
         !policy_TxID_Master_SplitFund = T.pppPolicy_TxID_Master_SplitFund pabParams
         !policy_TxID_Master_ClosePool = T.pppPolicy_TxID_Master_ClosePool pabParams
         !policy_TxID_Master_TerminatePool = T.pppPolicy_TxID_Master_TerminatePool pabParams
+        !policy_TxID_Master_Emergency = T.pppPolicy_TxID_Master_Emergency pabParams
         !policy_TxID_Master_DeleteFund = T.pppPolicy_TxID_Master_DeleteFund pabParams
         !policy_TxID_Master_SendBackFund = T.pppPolicy_TxID_Master_SendBackFund pabParams
         !policy_TxID_Master_SendBackDeposit = T.pppPolicy_TxID_Master_SendBackDeposit pabParams
@@ -723,6 +732,7 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
         !scriptMintingHash_TxID_Master_SplitFund = Utils.hashScriptMinting policy_TxID_Master_SplitFund
         !scriptMintingHash_TxID_Master_ClosePool = Utils.hashScriptMinting policy_TxID_Master_ClosePool
         !scriptMintingHash_TxID_Master_TerminatePool = Utils.hashScriptMinting policy_TxID_Master_TerminatePool
+        !scriptMintingHash_TxID_Master_Emergency = Utils.hashScriptMinting policy_TxID_Master_Emergency
         !scriptMintingHash_TxID_Master_DeleteFund = Utils.hashScriptMinting policy_TxID_Master_DeleteFund
         !scriptMintingHash_TxID_Master_SendBackFund = Utils.hashScriptMinting policy_TxID_Master_SendBackFund
         !scriptMintingHash_TxID_Master_SendBackDeposit = Utils.hashScriptMinting policy_TxID_Master_SendBackDeposit
@@ -732,55 +742,58 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
         !scriptMintingHash_TxID_User_Harvest = Utils.hashScriptMinting policy_TxID_User_Harvest
         !scriptMintingHash_TxID_User_Withdraw = Utils.hashScriptMinting policy_TxID_User_Withdraw
     ---------------------
-        !txID_Master_AddScripts_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
-        !txID_Master_AddScripts_AC = LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.txID_Master_AddScripts_TN)
+        !scriptID_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
+        !scriptID_AC = LedgerValue.AssetClass (scriptID_CS, T.scriptID_TN)
     ---------------------
-        -- !scriptID_Validator_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Validator_TN)
-        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_Fund_TN)
-        !scriptID_Master_FundAndMerge_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_FundAndMerge_TN)
-        !scriptID_Master_SplitFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SplitFund_TN )
-        !scriptID_Master_ClosePool_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_ClosePool_TN)
-        !scriptID_Master_TerminatePool_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_TerminatePool_TN )
-        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_DeleteFund_TN)
-        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackFund_TN)
-        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackDeposit_TN)
-        !scriptID_Master_AddScripts_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_AddScripts_TN)
-        !scriptID_Master_DeleteScripts_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_DeleteScripts_TN)
-        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Deposit_TN)
-        !scriptID_User_Harvest_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Harvest_TN)
-        !scriptID_User_Withdraw_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Withdraw_TN)
+        -- !scriptID_Validator_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Validator_TN)
+        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_Fund_TN)
+        !scriptID_Master_FundAndMerge_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_FundAndMerge_TN)
+        !scriptID_Master_SplitFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SplitFund_TN )
+        !scriptID_Master_ClosePool_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_ClosePool_TN)
+        !scriptID_Master_TerminatePool_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_TerminatePool_TN )
+        !scriptID_Master_Emergency_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_Emergency_TN )
+        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_DeleteFund_TN)
+        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackFund_TN)
+        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackDeposit_TN)
+        !scriptID_Master_AddScripts_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_AddScripts_TN)
+        !scriptID_Master_DeleteScripts_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_DeleteScripts_TN)
+        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Deposit_TN)
+        !scriptID_User_Harvest_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Harvest_TN)
+        !scriptID_User_Withdraw_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Withdraw_TN)
     let
     ---------------------
         !scriptDatum_Out = T.ScriptDatum T.ScriptDatumTypo {T.sdMaster = master}
     ---------------------
-    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_Fund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_Fund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_FundAndMerge' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_FundAndMerge_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_FundAndMerge' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_FundAndMerge_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SplitFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SplitFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SplitFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SplitFund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_ClosePool' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_ClosePool_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_ClosePool' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_ClosePool_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_TerminatePool' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_TerminatePool_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_TerminatePool' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_TerminatePool_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_Emergency' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_Emergency_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
     ---------------------
-    -- !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_DeleteScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_DeleteScripts_AC uTxOsAtValidator
+    -- !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Deposit_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_DeleteScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_DeleteScripts_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_User_Harvest' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Harvest_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Deposit_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_User_Withdraw' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Withdraw_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Harvest' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Harvest_AC uTxOsAtValidator
+    ---------------------
+    !uTxO_With_Script_User_Withdraw' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Withdraw_AC uTxOsAtValidator
     ---------------------
     let
-        !value_For_Mint_TxID_Master_AddScripts = LedgerValue.assetClassValue txID_Master_AddScripts_AC 1
+        !value_For_Mint_TxID_Master_AddScripts = LedgerValue.assetClassValue scriptID_AC 1
     ---------------------
         !redeemer_For_Consuming_Validator_Datum = T.mkRedeemerMasterAddScripts master
         !redeemer_For_Mint_TxID_Master_AddScripts = T.mkRedeemerMint_TxID redeemer_For_Consuming_Validator_Datum
@@ -794,7 +807,7 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
     PlutusContract.logInfo @P.String $ TextPrintf.printf "--------------------------------------------------------------------------------------------"
     PlutusContract.logInfo @P.String $ TextPrintf.printf "--------------------------------------------------------------------------------------------"
     ---------------------
-    !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
     ------------------------
     !uTxO_With_Script_Master_AddScripts <-
         case uTxO_With_Script_Master_AddScripts' of
@@ -816,9 +829,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_Fund_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_Fund
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_Fund (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_Fund  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -841,9 +856,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_FundAndMerge_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_FundAndMerge
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_FundAndMerge (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_FundAndMerge  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -866,9 +883,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_SplitFund_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_SplitFund
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_SplitFund (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_SplitFund  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -891,9 +910,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_ClosePool_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_ClosePool
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_ClosePool (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_ClosePool  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -916,9 +937,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_TerminatePool_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_TerminatePool
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_TerminatePool (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_TerminatePool  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -929,6 +952,33 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                 ------------------------
             _ -> do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "Already have 'Master Terminate Pool' Minting Script"
+    do
+        case uTxO_With_Script_Master_Emergency' of
+            Nothing -> do
+                uTxOsAtMasterFor_TxID_Master_Emergency_Datum <- PlutusContract.utxosAt masterAdds
+                let
+                    !value_For_Mint_ScriptID_Master_Emergency = LedgerValue.assetClassValue scriptID_Master_Emergency_AC 1
+                    !value_For_Mint = value_For_Mint_TxID_Master_AddScripts <> value_For_Mint_ScriptID_Master_Emergency
+                    !value_For_Script_Master_Emergency = LedgerAda.lovelaceValueOf 100000000 <> value_For_Mint_ScriptID_Master_Emergency <> value_For_Mint_TxID_Master_AddScripts
+                    (lookupsTx_Mint, tx_Mint) = OffChainHelpers.mintToken_With_RefPolicy uTxOsAtMasterFor_TxID_Master_Emergency_Datum uTxO_With_Script_Master_AddScripts (Just redeemer_For_Mint_TxID_Master_AddScripts) value_For_Mint validityRange masterPPKH
+                    lookupsTx =
+                        lookupsTx_Mint P.<>
+                        LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_Emergency_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
+                        LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_Emergency
+                    tx =
+                        tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
+                        LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_Emergency (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_Emergency  P.<>
+                        LedgerConstraints.mustValidateIn validityRange P.<>
+                        LedgerConstraints.mustBeSignedBy masterPPKH
+                ------------------------
+                submittedTx <- PlutusContract.submitTxConstraintsWith @DataVoid.Void lookupsTx tx
+                txStatus <- PlutusContract.awaitTxStatusChange $ Ledger.getCardanoTxId submittedTx
+                PlutusContract.logInfo @P.String $ TextPrintf.printf "txStatus Master Add Scripts (txId: %s): %s" (P.show $ Ledger.getCardanoTxId submittedTx) (P.show txStatus)
+                ------------------------
+            _ -> do
+                PlutusContract.logInfo @P.String $ TextPrintf.printf "Already have 'Master Emergency' Minting Script"
     do
         case uTxO_With_Script_Master_DeleteFund' of
             Nothing -> do
@@ -941,9 +991,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_DeleteFund_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_DeleteFund
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_DeleteFund (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_DeleteFund  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -966,9 +1018,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_SendBackFund_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_SendBackFund
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_SendBackFund (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_SendBackFund  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -991,9 +1045,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_SendBackDeposit_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_SendBackDeposit
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_SendBackDeposit (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_SendBackDeposit  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -1016,9 +1072,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_Master_DeleteScripts_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_Master_DeleteScripts
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_Master_DeleteScripts (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_Master_DeleteScripts  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -1041,9 +1099,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_User_Deposit_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_User_Deposit
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_User_Deposit (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_User_Deposit  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -1066,9 +1126,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_User_Harvest_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_User_Harvest
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_User_Harvest (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_User_Harvest  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -1091,9 +1153,11 @@ masterAddScripts T.PABMasterAddScriptsParams{..} = do
                     lookupsTx =
                         lookupsTx_Mint P.<>
                         LedgerConstraints.unspentOutputs uTxOsAtMasterFor_TxID_User_Withdraw_Datum P.<>
+                        LedgerConstraints.unspentOutputs (DataMap.fromList [uTxO_With_PoolDatum]) P.<>
                         LedgerConstraints.plutusV2MintingPolicy policy_TxID_User_Withdraw
                     tx =
                         tx_Mint P.<>
+                        LedgerConstraints.mustReferenceOutput (fst uTxO_With_PoolDatum) P.<>
                         LedgerConstraints.mustPayToAddressWithReferenceScript validatorAddress scriptMintingHash_TxID_User_Withdraw (Just $ LedgerTxConstraints.TxOutDatumInTx $ LedgerApiV2.Datum $ PlutusTx.toBuiltinData scriptDatum_Out) value_For_Script_User_Withdraw  P.<>
                         LedgerConstraints.mustValidateIn validityRange P.<>
                         LedgerConstraints.mustBeSignedBy masterPPKH
@@ -1132,29 +1196,29 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
         -- !policy_TxID_Master_DeleteScripts = T.pppPolicy_TxID_Master_DeleteScripts pabParams
     ---------------------
         !poolID_CS = T.ppPoolID_CS pParams
-        !poolID_TN = T.poolID_TN
-        !poolID_AC = LedgerValue.assetClass poolID_CS poolID_TN
+        !poolID_AC = LedgerValue.AssetClass (poolID_CS, T.poolID_TN)
     ---------------------
         !txID_Master_DeleteScripts_CS =  T.pppCurSymbol_TxID_Master_DeleteScripts pabParams
         !txID_Master_DeleteScripts_AC = LedgerValue.AssetClass (txID_Master_DeleteScripts_CS, T.txID_Master_DeleteScripts_TN)
     ---------------------
-        !txID_Master_AddScripts_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
-        !txID_Master_AddScripts_AC = LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.txID_Master_AddScripts_TN)
+        !scriptID_CS =  T.pppCurSymbol_TxID_Master_AddScripts pabParams
+        !scriptID_AC = LedgerValue.AssetClass (scriptID_CS, T.scriptID_TN)
     ---------------------
-        !scriptID_Validator_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Validator_TN)
-        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_Fund_TN)
-        !scriptID_Master_FundAndMerge_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_FundAndMerge_TN)
-        !scriptID_Master_SplitFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SplitFund_TN )
-        !scriptID_Master_ClosePool_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_ClosePool_TN)
-        !scriptID_Master_TerminatePool_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_TerminatePool_TN )
-        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_DeleteFund_TN)
-        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackFund_TN)
-        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_SendBackDeposit_TN)
-        !scriptID_Master_AddScripts_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_AddScripts_TN)
-        !scriptID_Master_DeleteScripts_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_Master_DeleteScripts_TN)
-        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Deposit_TN)
-        !scriptID_User_Harvest_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Harvest_TN)
-        !scriptID_User_Withdraw_AC =  LedgerValue.AssetClass (txID_Master_AddScripts_CS, T.scriptID_User_Withdraw_TN)
+        !scriptID_Validator_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Validator_TN)
+        !scriptID_Master_Fund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_Fund_TN)
+        !scriptID_Master_FundAndMerge_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_FundAndMerge_TN)
+        !scriptID_Master_SplitFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SplitFund_TN )
+        !scriptID_Master_ClosePool_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_ClosePool_TN)
+        !scriptID_Master_TerminatePool_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_TerminatePool_TN )
+        !scriptID_Master_Emergency_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_Emergency_TN )
+        !scriptID_Master_DeleteFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_DeleteFund_TN)
+        !scriptID_Master_SendBackFund_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackFund_TN)
+        !scriptID_Master_SendBackDeposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_SendBackDeposit_TN)
+        !scriptID_Master_AddScripts_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_AddScripts_TN)
+        !scriptID_Master_DeleteScripts_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_Master_DeleteScripts_TN)
+        !scriptID_User_Deposit_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Deposit_TN)
+        !scriptID_User_Harvest_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Harvest_TN)
+        !scriptID_User_Withdraw_AC =  LedgerValue.AssetClass (scriptID_CS, T.scriptID_User_Withdraw_TN)
     ---------------------
     !checkCollateral <- OffChainHelpers.checkIfThereIsUTxOFreeForCollateral uTxOsAtMaster
     if checkCollateral then
@@ -1164,7 +1228,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
     ---------------------
     uTxOsAtValidator <- PlutusContract.utxosAt validatorAddress
     ---------------------
-    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Validator_AC uTxOsAtValidator
+    !uTxO_With_ScriptDatum' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Validator_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_ScriptDatum <- 
         case uTxO_With_ScriptDatum' of
@@ -1174,23 +1238,25 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with Main Validator Script: %s" (P.show $ fst uTxO_With_ScriptDatum)
                 return uTxO_With_ScriptDatum
     ---------------------
-    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_Fund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_Fund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_Fund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_FundAndMerge' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_FundAndMerge_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_FundAndMerge' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_FundAndMerge_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SplitFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SplitFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SplitFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SplitFund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_ClosePool' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_ClosePool_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_ClosePool' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_ClosePool_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_TerminatePool' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_TerminatePool_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_TerminatePool' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_TerminatePool_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_Emergency' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_Emergency_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_DeleteFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_DeleteFund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackFund' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackFund_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_SendBackDeposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_SendBackDeposit_AC uTxOsAtValidator
+    ---------------------
+    !uTxO_With_Script_Master_AddScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_AddScripts_AC uTxOsAtValidator
     ------------------------
     !uTxO_With_Script_Master_AddScripts <-
         case uTxO_With_Script_Master_AddScripts' of
@@ -1200,7 +1266,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with 'Master Add Scripts' Minting Script: %s" (P.show $ fst uTxO_With_Script_Master_AddScripts)
                 return uTxO_With_Script_Master_AddScripts
     ------------------------
-    !uTxO_With_Script_Master_DeleteScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_Master_DeleteScripts_AC uTxOsAtValidator
+    !uTxO_With_Script_Master_DeleteScripts' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_Master_DeleteScripts_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_Script_Master_DeleteScripts <- 
         case uTxO_With_Script_Master_DeleteScripts' of
@@ -1210,11 +1276,11 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                 PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxO with 'Master Delete Scripts' Minting Script: %s" (P.show $ fst uTxO_With_Script_Master_DeleteScripts)
                 return uTxO_With_Script_Master_DeleteScripts   
     ---------------------
-    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Deposit_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Deposit' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Deposit_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_User_Harvest' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Harvest_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Harvest' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Harvest_AC uTxOsAtValidator
     ---------------------
-    !uTxO_With_Script_User_Withdraw' <- OffChainHelpers.getUTxO_With_ScriptDatum txID_Master_AddScripts_AC scriptID_User_Withdraw_AC uTxOsAtValidator
+    !uTxO_With_Script_User_Withdraw' <- OffChainHelpers.getUTxO_With_ScriptDatum scriptID_AC scriptID_User_Withdraw_AC uTxOsAtValidator
     ---------------------
     !uTxO_With_PoolDatum' <- OffChainHelpers.getUTxO_With_PoolDatum poolID_AC uTxOsAtValidator
     ---------------------
@@ -1227,7 +1293,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                 return uTxO_With_PoolDatum
     let     
         ---------------------
-        !value_For_Burn_Each_TxID_Master_AddScripts  = LedgerValue.assetClassValue txID_Master_AddScripts_AC (-1)
+        !value_For_Burn_Each_TxID_Master_AddScripts  = LedgerValue.assetClassValue scriptID_AC (-1)
         ---------------------
         !uTxOsWithDatumAndValue' = concat
             [
@@ -1290,6 +1356,18 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                             !master' = T.sdMaster scriptDatum
                         in
                             [(uTxO_With_Script_Master_TerminatePool, master', value_For_Master, value_For_Burn_ScriptID)]
+            ,    
+                case uTxO_With_Script_Master_Emergency' of
+                    Nothing -> []
+                    Just uTxO_With_Script_Master_Emergency ->
+                        let
+                            !scriptDatum = Helpers.getScriptDatumTypo_FromMaybeDatum $ OffChainHelpers.getDatumFromDecoratedTxOut $ snd uTxO_With_Script_Master_Emergency
+                            !value_In_ScriptDatum = OffChainHelpers.getValueFromDecoratedTxOut $ snd uTxO_With_Script_Master_Emergency
+                            !value_For_Burn_ScriptID  = LedgerValue.assetClassValue scriptID_Master_Emergency_AC (-1)
+                            !value_For_Master = value_In_ScriptDatum <> value_For_Burn_Each_TxID_Master_AddScripts <> value_For_Burn_ScriptID
+                            !master' = T.sdMaster scriptDatum
+                        in
+                            [(uTxO_With_Script_Master_Emergency, master', value_For_Master, value_For_Burn_ScriptID)]
             ,    
                 case uTxO_With_Script_Master_DeleteFund' of
                     Nothing -> []
@@ -1373,7 +1451,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
     let 
         !value_For_Mint_TxID_Master_DeleteScripts = LedgerValue.assetClassValue txID_Master_DeleteScripts_AC 1
     ---------------------
-        !value_For_Burn_All_TxID_Master_AddScripts  = negate $ LedgerValue.assetClassValue txID_Master_AddScripts_AC (length uTxOsWithDatumAndValue)
+        !value_For_Burn_All_TxID_Master_AddScripts  = negate $ LedgerValue.assetClassValue scriptID_AC (length uTxOsWithDatumAndValue)
         !value_For_Burn_All_ScriptID =  foldl (<>) (LedgerAda.lovelaceValueOf 0) [ value | (_, _, _, value) <- uTxOsWithDatumAndValue]
         !value_For_Burn = value_For_Burn_All_TxID_Master_AddScripts <> value_For_Burn_All_ScriptID
     ---------------------
@@ -1427,7 +1505,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
 
         inputs_TxOuts_Values_And_ScriptDatums :: [T.TxOut_Value_And_ScriptDatum]
         !inputs_TxOuts_Values_And_ScriptDatums =
-            [(OffChainHelpers.getValueFromDecoratedTxOut ci , Helpers.getScriptDatumTypo_FromMaybeDatum $ OffChainHelpers.getDatumFromDecoratedTxOut ci) | ((_, ci), _, _, _) <-  uTxOsWithDatumAndValue]
+            [(OffChainHelpers.getValueFromDecoratedTxOut ci , Helpers.getScriptDatumTypo_FromMaybeDatum $ OffChainHelpers.getDatumFromDecoratedTxOut ci) | ((_, ci), _, _, _) <- uTxOsWithDatumAndValue]
         
         !correctOutput_PoolDatum_Value_WithTokens =
             let
@@ -1471,7 +1549,7 @@ masterDeleteScripts T.PABMasterDeleteScriptsParams{..} = do
                             !scriptDatum_In = OnChainNFTHelpers.getTxOut_Datum input_TxOut_Value_And_ScriptDatum
                             !master_To_SendBack = T.sdMaster scriptDatum_In
                             !value_In_ScriptDatum = OnChainNFTHelpers.getTxOut_Value input_TxOut_Value_And_ScriptDatum
-                            !value_For_Burn'  = negate $ Helpers.valueFromCurrencySymbol value_In_ScriptDatum txID_Master_AddScripts_CS
+                            !value_For_Burn'  = negate $ Helpers.getValueOfCurrencySymbol value_In_ScriptDatum scriptID_CS
                             !value_For_Master = value_In_ScriptDatum <> value_For_Burn'
                         in
                             (master_To_SendBack, value_For_Master)

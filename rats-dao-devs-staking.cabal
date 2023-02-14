@@ -27,6 +27,7 @@ library
   exposed-modules:    
                       Validators.StakePlusV2.PAB.PABSimulator,
                       Deploy,
+                      Test,
                       Validators.StakePlusV2.Helpers,
                       Validators.StakePlusV2.OffChain.EndPoints,
                       Validators.StakePlusV2.OffChain.EndPointsMaster1,
@@ -43,6 +44,7 @@ library
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund,
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool,
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool,
+                      Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Emergency,
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund,
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund,
                       Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit,

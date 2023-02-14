@@ -21,6 +21,7 @@
 
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+---- {-# LANGUAGE Strict #-}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.Types.RedeemersValidator where
 ------------------------------------------------------------------------------------------
@@ -123,6 +124,21 @@ instance Eq RedeemerMasterTerminatePoolTypo where
 
 PlutusTx.makeIsDataIndexed ''RedeemerMasterTerminatePoolTypo [ 
         ('RedeemerMasterTerminatePoolTypo, 0)
+    ]
+
+------------------------------------------------------------------------------------------
+
+newtype RedeemerMasterEmergencyTypo  = RedeemerMasterEmergencyTypo { 
+        rmeMaster :: Master
+    } 
+    deriving (P.Show, GHCGenerics.Generic, DataAeson.ToJSON, DataAeson.FromJSON) 
+
+instance Eq RedeemerMasterEmergencyTypo where
+    {-# INLINABLE (==) #-}
+    r1 == r2 = rmeMaster r1 == rmeMaster r2
+
+PlutusTx.makeIsDataIndexed ''RedeemerMasterEmergencyTypo [ 
+        ('RedeemerMasterEmergencyTypo, 0)
     ]
 
 ------------------------------------------------------------------------------------------
@@ -272,6 +288,7 @@ data RedeemerValidator =
     RedeemerMasterSplitFund RedeemerMasterSplitFundTypo | 
     RedeemerMasterClosePool RedeemerMasterClosePoolTypo | 
     RedeemerMasterTerminatePool RedeemerMasterTerminatePoolTypo | 
+    RedeemerMasterEmergency RedeemerMasterEmergencyTypo | 
     RedeemerMasterDeleteFund RedeemerMasterDeleteFundTypo | 
     RedeemerMasterSendBackFund RedeemerMasterSendBackFundTypo |  
     RedeemerMasterSendBackDeposit RedeemerMasterSendBackDepositTypo |  
@@ -289,6 +306,7 @@ instance Eq RedeemerValidator where
     RedeemerMasterSplitFund rmcp1 == RedeemerMasterSplitFund  rmcp2 = rmcp1 == rmcp2
     RedeemerMasterClosePool rmcp1 == RedeemerMasterClosePool  rmcp2 = rmcp1 == rmcp2
     RedeemerMasterTerminatePool rmcp1 == RedeemerMasterTerminatePool  rmcp2 = rmcp1 == rmcp2
+    RedeemerMasterEmergency rmcp1 == RedeemerMasterEmergency  rmcp2 = rmcp1 == rmcp2
     RedeemerMasterDeleteFund rmcp1 == RedeemerMasterDeleteFund  rmcp2 = rmcp1 == rmcp2
     RedeemerMasterSendBackFund rmgp1 == RedeemerMasterSendBackFund  rmgp2 = rmgp1 == rmgp2
     RedeemerMasterSendBackDeposit rmgp1 == RedeemerMasterSendBackDeposit  rmgp2 = rmgp1 == rmgp2
@@ -305,6 +323,7 @@ PlutusTx.makeIsDataIndexed ''RedeemerValidator [
         ('RedeemerMasterSplitFund, 3),
         ('RedeemerMasterClosePool, 4),
         ('RedeemerMasterTerminatePool, 5),
+        ('RedeemerMasterEmergency, 24),
         ('RedeemerMasterDeleteFund, 6),
         ('RedeemerMasterSendBackFund, 7),
         ('RedeemerMasterSendBackDeposit, 8),
@@ -377,6 +396,16 @@ mkRedeemerMasterTerminatePoolTypo master = RedeemerMasterTerminatePoolTypo {
 
 ------------------------------------------------------------------------------------------
 
+mkRedeemerMasterEmergency :: Master -> RedeemerValidator
+mkRedeemerMasterEmergency !master = RedeemerMasterEmergency $ mkRedeemerMasterEmergencyTypo master
+
+mkRedeemerMasterEmergencyTypo :: Master -> RedeemerMasterEmergencyTypo
+mkRedeemerMasterEmergencyTypo !master = RedeemerMasterEmergencyTypo {
+        rmeMaster = master
+    }
+
+------------------------------------------------------------------------------------------
+
 mkRedeemerMasterDeleteFund :: Master -> RedeemerValidator
 mkRedeemerMasterDeleteFund master = RedeemerMasterDeleteFund $ mkRedeemerMasterDeleteFundTypo master 
 
@@ -441,6 +470,7 @@ mkRedeemerUserDepositTypo user invest createdAt minAda = RedeemerUserDepositTypo
     }  
 
 ------------------------------------------------------------------------------------------
+
 
 mkRedeemerUserHarvest :: User -> Integer -> LedgerApiV2.POSIXTime -> RedeemerValidator
 mkRedeemerUserHarvest user claimAmount claimAt = RedeemerUserHarvest $ mkRedeemerUserHarvestTypo user claimAmount claimAt

@@ -20,6 +20,7 @@
 {-# LANGUAGE NumericUnderscores         #-}
 {- HLINT ignore "Use camelCase" -}
 -- {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 -----------------------------------------------------------------------------------------
 module Validators.StakePlusV2.Types.Examples where
 -----------------------------------------------------------------------------------------
@@ -53,9 +54,18 @@ exampleTxOutRef = LedgerApiV2.TxOutRef {
             LedgerApiV2.txOutRefId = "aaccff",
             LedgerApiV2.txOutRefIdx = 10
         }
+
+exampleTxOutRef1 :: LedgerApiV2.TxOutRef
+exampleTxOutRef1 = LedgerApiV2.TxOutRef {
+            LedgerApiV2.txOutRefId = "aacc11",
+            LedgerApiV2.txOutRefIdx = 11
+        }
         
 exampleAddress :: LedgerAddress.Address
 exampleAddress =  LedgerAddress.Address {LedgerApiV2.addressCredential =  LedgerApiV2.PubKeyCredential $ LedgerApiV2.PubKeyHash  "abfff883edcf7a2e38628015cebb72952e361b2c8a2262f7daf9c16e" , LedgerApiV2.addressStakingCredential =  Nothing }
+
+exampleAddress1 :: LedgerAddress.Address
+exampleAddress1 =  LedgerAddress.Address {LedgerApiV2.addressCredential =  LedgerApiV2.PubKeyCredential $ LedgerApiV2.PubKeyHash  "abfff883edcf7a2e38628015cebb72952e361b2c8a2262f7daf9c1ff" , LedgerApiV2.addressStakingCredential =  Nothing }
 
 exampleHash :: LedgerApiV2.ValidatorHash 
 exampleHash = LedgerApiV2.ValidatorHash "aaccff"
@@ -113,6 +123,7 @@ examplePoolDatum = PoolDatum PoolDatumTypo {
         pdTotalCashedOut = 0,
         pdClosedAt = Just examplePOSIXTime,
         pdIsTerminated = poolDatum_NotTerminated,
+        pdIsEmergency = poolDatum_NotEmergency,
         pdMinAda = exampleInteger
     }
 
@@ -203,6 +214,7 @@ examplePABPoolParams = PABPoolParams
         pppPolicy_TxID_Master_SplitFund = exampleMintingPolicy,
         pppPolicy_TxID_Master_ClosePool = exampleMintingPolicy,
         pppPolicy_TxID_Master_TerminatePool = exampleMintingPolicy,
+        pppPolicy_TxID_Master_Emergency = exampleMintingPolicy,
         pppPolicy_TxID_Master_DeleteFund = exampleMintingPolicy,
         pppPolicy_TxID_Master_SendBackFund = exampleMintingPolicy,
         pppPolicy_TxID_Master_SendBackDeposit = exampleMintingPolicy,
@@ -218,6 +230,7 @@ examplePABPoolParams = PABPoolParams
         pppCurSymbol_TxID_Master_SplitFund = exampleCS,
         pppCurSymbol_TxID_Master_ClosePool = exampleCS,
         pppCurSymbol_TxID_Master_TerminatePool = exampleCS,
+        pppCurSymbol_TxID_Master_Emergency = exampleCS,
         pppCurSymbol_TxID_Master_DeleteFund = exampleCS,
         pppCurSymbol_TxID_Master_SendBackFund = exampleCS,
         pppCurSymbol_TxID_Master_SendBackDeposit= exampleCS,
@@ -301,6 +314,12 @@ examplePABMasterTerminatePoolParams :: PABMasterTerminatePoolParams
 examplePABMasterTerminatePoolParams = PABMasterTerminatePoolParams
     { 
         pmtPABPoolParams = examplePABPoolParams
+    } 
+
+examplePABMasterEmergencyParams :: PABMasterEmergencyParams
+examplePABMasterEmergencyParams = PABMasterEmergencyParams
+    { 
+        pmePABPoolParams = examplePABPoolParams
     } 
 
 examplePABMasterDeleteFundParams :: PABMasterDeleteFundParams

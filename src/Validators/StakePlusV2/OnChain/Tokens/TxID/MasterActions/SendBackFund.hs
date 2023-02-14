@@ -19,6 +19,7 @@
 -- {-# LANGUAGE AllowAmbiguousTypes        #-}
 -- {-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE BangPatterns #-}
+-- -- {-# LANGUAGE Strict #-}
 {- HLINT ignore "Use camelCase" -}
 
 ------------------------------------------------------------------------------------------
@@ -36,18 +37,15 @@ import qualified Plutonomy
 import qualified Plutus.V2.Ledger.Api                                       as LedgerApiV2 (unsafeFromBuiltinData, txOutValue, MintingPolicy) 
 import qualified Plutus.V2.Ledger.Contexts                                  as LedgerContextsV2 (ownCurrencySymbol, ScriptContext, TxInfo, scriptContextTxInfo, valuePaidTo) 
 import qualified PlutusTx                                                   (compile, applyCode, liftCode)
-import           PlutusTx.Prelude                                           ( Bool, Maybe(Nothing), Eq((==)), BuiltinData, Semigroup((<>)), (&&), error, traceError, ($), negate, traceIfFalse, (||) )
+import           PlutusTx.Prelude                                           ( Bool, Maybe(Nothing, Just), Eq((==)), BuiltinData, Semigroup((<>)), (&&), error, traceError, ($), negate, traceIfFalse, (||), length )
 ------------------------------------------------------------------------------------------
 -- Import Internos
 ------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------
--- Import Internos
-------------------------------------------------------------------------------------------
-import qualified Validators.StakePlusV2.Helpers                             as Helpers (fromJust, getFundAmountsRemains_ForMaster, mkUpdated_PoolDatum_With_SendBackFund, valueIncludesValue)
+import qualified Validators.StakePlusV2.Helpers                             as Helpers (getFundAmountsRemains_ForMaster, mkUpdated_PoolDatum_With_SendBackFund, valueIncludesValue, valueEqualsValue, getPoolDatumTypo_FromDatum)
 import qualified Validators.StakePlusV2.OnChain.Core.OnChainHelpers         as OnChainHelpers (getInputsWithDatum, getOutputsWithDatum, isTerminated, validateMasterAction, isNFT_Minted_With_AC)
-import qualified Validators.StakePlusV2.OnChain.Tokens.OnChainNFTHelpers    as OnChainNFTHelpers (validateBurn_Token_Own_CS_Any_TN, checkIfAllAreFromSameAddress, checkIfAllSpendRedeemersAreEqual, getTxOut_Value_And_PoolDatum, getTxOut_Datum, getTxOut_Value)
-import qualified Validators.StakePlusV2.Types.Constants                     as T (poolID_TN, txID_Master_SendBackFund_TN)
-import qualified Validators.StakePlusV2.Types.DatumsValidator               as T (TxOut_Value_And_Datum, PoolDatumTypo (..), DatumValidator (PoolDatum))
+import qualified Validators.StakePlusV2.OnChain.Tokens.OnChainNFTHelpers    as OnChainNFTHelpers (validateBurn_Token_Own_CS_Any_TN, checkIfAllAreFromSameAddress, checkIfAllSpendRedeemersAreEqual, getTxOut_Datum, getTxOut_Value, getTxOut_Value_And_SomeDatum)
+import qualified Validators.StakePlusV2.Types.Constants                     as T (poolID_TN, txID_Master_SendBackFund_TN, const_1_PD)
+import qualified Validators.StakePlusV2.Types.DatumsValidator               as T (TxOut_Value_And_Datum, PoolDatumTypo (..))
 import qualified Validators.StakePlusV2.Types.RedeemersMint                 as T (Redeemer_TxID (..), RedeemerBurn_TxIDTypo (..), RedeemerMint_TxIDTypo(..))
 import qualified Validators.StakePlusV2.Types.RedeemersValidator            as T (RedeemerValidator (RedeemerMasterSendBackFund), RedeemerMasterSendBackFundTypo (..))
 import qualified Validators.StakePlusV2.Types.Types                         as T (PoolParams (..))
@@ -56,7 +54,7 @@ import qualified Validators.StakePlusV2.Types.Types                         as T
 ------------------------------------------------------------------------------------------
 {-# INLINABLE mkPolicy_TxID_Master_SendBackFund #-}
 mkPolicy_TxID_Master_SendBackFund :: T.PoolParams -> BuiltinData -> BuiltinData -> ()
-mkPolicy_TxID_Master_SendBackFund pParams mintRedeemerRaw ctxRaw  = 
+mkPolicy_TxID_Master_SendBackFund !pParams !mintRedeemerRaw !ctxRaw  = 
   let
         !mintRedeemer = LedgerApiV2.unsafeFromBuiltinData @T.Redeemer_TxID mintRedeemerRaw
         !ctx = LedgerApiV2.unsafeFromBuiltinData @LedgerContextsV2.ScriptContext ctxRaw
@@ -66,10 +64,8 @@ mkPolicy_TxID_Master_SendBackFund pParams mintRedeemerRaw ctxRaw  =
             (T.RedeemerMint_TxID T.RedeemerMint_TxIDTypo{..}) ->
                 let
                     !redeemer' = mrRedeemerValidator
-
                     !inputs_WithDatum = OnChainHelpers.getInputsWithDatum ctx
                     !outputs_WithDatum = OnChainHelpers.getOutputsWithDatum ctx
-
                     !inputs_TxOut_Values_And_Datums = [ (LedgerApiV2.txOutValue txtout, dat) | (txtout, dat) <- inputs_WithDatum ]
                     !outputs_TxOut_Values_And_Datums = [ (LedgerApiV2.txOutValue txtout, dat) | (txtout, dat) <- outputs_WithDatum ]
                 in
@@ -78,8 +74,8 @@ mkPolicy_TxID_Master_SendBackFund pParams mintRedeemerRaw ctxRaw  =
                     
                     case redeemer' of
                         (T.RedeemerMasterSendBackFund redeemer) ->
-                              validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums outputs_TxOut_Values_And_Datums
-                        _ -> traceError "INVOP"-- "Minting TxID: Invalid Operation"
+                            validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums outputs_TxOut_Values_And_Datums
+                        _ -> traceError "INVOP"
         then ()
 
         else error ()
@@ -88,31 +84,20 @@ mkPolicy_TxID_Master_SendBackFund pParams mintRedeemerRaw ctxRaw  =
 
 {-# INLINABLE validateMasterSendBackFund #-}
 validateMasterSendBackFund :: T.PoolParams -> LedgerContextsV2.ScriptContext -> T.RedeemerMasterSendBackFundTypo -> [T.TxOut_Value_And_Datum] -> [T.TxOut_Value_And_Datum] -> Bool
-validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums outputs_TxOut_Values_And_Datums  =
+validateMasterSendBackFund !pParams !ctx !redeemer !inputs_TxOut_Values_And_Datums !outputs_TxOut_Values_And_Datums  =
+        OnChainHelpers.validateMasterAction pParams info master &&
+        traceIfFalse "MSBF" (OnChainHelpers.isNFT_Minted_With_AC txID_Master_SendBackFund_AC  info ) && 
+        traceIfFalse "WIO" correctIO &&
 
         traceIfFalse "NOTTERMINATED" (OnChainHelpers.isTerminated pParams info poolDatum_In) &&
         
-        -- Basic validations for Master Actions
-        OnChainHelpers.validateMasterAction pParams info master &&
-
-        -- Check if the txID_Master_SendBackFund_AC minted is there
-        traceIfFalse "MSBF" (OnChainHelpers.isNFT_Minted_With_AC txID_Master_SendBackFund_AC  info ) && 
-        
-        traceIfFalse "F0" correctFundCount && 
-
         (
             master == master_To_SendBack || traceIfFalse "MSBFV" correctFundAmount_SendBackToMaster 
-        )
-        && 
-
-        traceIfFalse "PD" correctOutput_PoolDatum_Updated_With_SendBackFund && --"Wrong updated PoolDatum"
-
-        -- Must be the same than the input.
-        traceIfFalse "PDV" correctOutput_PoolDatum_Value_WithTokens -- "Wrong PoolDatum Value."
-
+        ) &&
+        traceIfFalse "F0" correctFundCount && 
+        traceIfFalse "PD" correctOutput_PoolDatum_Updated_With_SendBackFund &&        
+        traceIfFalse "PDV" correctOutput_PoolDatum_Value_WithTokens        
     where
-
-        ------------------
         info :: LedgerContextsV2.TxInfo
         !info = LedgerContextsV2.scriptContextTxInfo ctx
         ------------------
@@ -124,17 +109,22 @@ validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums o
         !txID_Master_SendBackFund_CS = LedgerContextsV2.ownCurrencySymbol ctx
         !txID_Master_SendBackFund_AC = LedgerValue.AssetClass (txID_Master_SendBackFund_CS, T.txID_Master_SendBackFund_TN)
         ------------------
-        !input_TxOut_Value_And_PoolDatum' = OnChainNFTHelpers.getTxOut_Value_And_PoolDatum poolID_AC inputs_TxOut_Values_And_Datums
         !input_TxOut_Value_And_PoolDatum =
-            case input_TxOut_Value_And_PoolDatum' of
-                Nothing -> traceError "IPD" -- "Error. Can't find input with PoolDatum"
-                _       -> Helpers.fromJust input_TxOut_Value_And_PoolDatum'
+            case OnChainNFTHelpers.getTxOut_Value_And_SomeDatum poolID_AC Helpers.getPoolDatumTypo_FromDatum inputs_TxOut_Values_And_Datums of
+                Nothing -> traceError "IPD"
+                Just x  -> x
         ------------------
-        !output_TxOut_Value_And_PoolDatum' = OnChainNFTHelpers.getTxOut_Value_And_PoolDatum poolID_AC outputs_TxOut_Values_And_Datums
         !output_TxOut_Value_And_PoolDatum =
-            case output_TxOut_Value_And_PoolDatum' of
-                Nothing -> traceError "OPD" -- "Error. Can't find output with PoolDatum"
-                _       -> Helpers.fromJust output_TxOut_Value_And_PoolDatum'
+            case OnChainNFTHelpers.getTxOut_Value_And_SomeDatum poolID_AC Helpers.getPoolDatumTypo_FromDatum outputs_TxOut_Values_And_Datums of
+                Nothing -> traceError "OPD"
+                Just x  -> x
+        ------------------
+        correctIO :: Bool
+        correctIO =
+            -- caseIO # : REF INPUTS , NORMAL INPUTS      / OUTPUTS
+            -- caseIO 1 : 0 R        , 1 (1 PD)           / 1 (1 PD)
+            (length inputs_TxOut_Values_And_Datums  == T.const_1_PD ) &&
+            (length outputs_TxOut_Values_And_Datums == T.const_1_PD ) 
         ------------------
         !poolDatum_In = OnChainNFTHelpers.getTxOut_Datum input_TxOut_Value_And_PoolDatum
         ------------------
@@ -153,11 +143,11 @@ validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums o
         -- !(!value_For_SendBackFundAmount, getBackFundAmount_Calculated_From_Diff_PoolDatum) =
         --     if haverstIsWithoutTokenName then
         --         let
-        --             !value_In_PoolDatum_FromCurrencySymbol = Helpers.valueFromCurrencySymbol value_In_PoolDatum harvest_CS
-        --             !value_For_PoolDatum_Real_FromCurrencySymbol = Helpers.valueFromCurrencySymbol value_For_PoolDatum_Real harvest_CS
+        --             !value_In_PoolDatum_FromCurrencySymbol = Helpers.getValueOfCurrencySymbol value_In_PoolDatum harvest_CS
+        --             !value_For_PoolDatum_Real_FromCurrencySymbol = Helpers.getValueOfCurrencySymbol value_For_PoolDatum_Real harvest_CS
         --         ---------------------
         --             !value_For_SendBackFundAmount' = value_In_PoolDatum_FromCurrencySymbol <> negate value_For_PoolDatum_Real_FromCurrencySymbol
-        --             !sendBackFundAmountForMaster'' = Helpers.valueOfCurrencySymbol value_For_SendBackFundAmount harvest_CS
+        --             !sendBackFundAmountForMaster'' = Helpers.getAmtOfCurrencySymbol value_For_SendBackFundAmount harvest_CS
         --         in
         --             (value_For_SendBackFundAmount', sendBackFundAmountForMaster'')
         --     else
@@ -182,14 +172,12 @@ validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums o
                 !value_For_SendBackFundAmountForMaster_Control = value_For_SendBackFundAmountForMasterPlusAda
             in
                 Helpers.valueIncludesValue value_For_SendBackFundAmountForMaster_Real value_For_SendBackFundAmountForMaster_Control
-
         ------------------
         correctOutput_PoolDatum_Updated_With_SendBackFund :: Bool
         !correctOutput_PoolDatum_Updated_With_SendBackFund =
             let
                 !poolDatum_Out_Control = Helpers.mkUpdated_PoolDatum_With_SendBackFund poolDatum_In master_To_SendBack 
-            ---------------------
-                !poolDatum_Out_Real = T.PoolDatum $ OnChainNFTHelpers.getTxOut_Datum output_TxOut_Value_And_PoolDatum
+                !poolDatum_Out_Real = OnChainNFTHelpers.getTxOut_Datum output_TxOut_Value_And_PoolDatum
             in
                 poolDatum_Out_Real == poolDatum_Out_Control 
         ------------------
@@ -197,13 +185,12 @@ validateMasterSendBackFund pParams ctx redeemer inputs_TxOut_Values_And_Datums o
         !correctOutput_PoolDatum_Value_WithTokens =
             let
                 !value_For_Mint_TxID_Master_SendBackFund = LedgerValue.assetClassValue txID_Master_SendBackFund_AC 1
-            ---------------------
                 !value_For_PoolDatum_Control = value_In_PoolDatum <> value_For_Mint_TxID_Master_SendBackFund <> negate value_For_SendBackFundAmountForMasterPlusAda
             in
                 -- if haverstIsWithoutTokenName then
                 --     sendBackFundAmountForMaster == getBackFundAmount_Calculated_From_Diff_PoolDatum && value_For_PoolDatum_Real == value_For_PoolDatum_Control
                 -- else
-                value_For_PoolDatum_Real == value_For_PoolDatum_Control
+                Helpers.valueEqualsValue value_For_PoolDatum_Real value_For_PoolDatum_Control
 
 --------------------------------------------------------------------------------
 

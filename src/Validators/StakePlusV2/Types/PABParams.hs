@@ -20,6 +20,7 @@
 --{-# LANGUAGE AllowAmbiguousTypes        #-}
 -- {-# LANGUAGE NumericUnderscores         #-}
 -- {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {- HLINT ignore "Use camelCase" -}
 
@@ -74,6 +75,7 @@ data PABPoolParams = PABPoolParams
         pppPolicy_TxID_Master_SplitFund :: LedgerApiV2.MintingPolicy,
         pppPolicy_TxID_Master_ClosePool :: LedgerApiV2.MintingPolicy,
         pppPolicy_TxID_Master_TerminatePool :: LedgerApiV2.MintingPolicy,
+        pppPolicy_TxID_Master_Emergency :: LedgerApiV2.MintingPolicy,
         pppPolicy_TxID_Master_DeleteFund :: LedgerApiV2.MintingPolicy,
         pppPolicy_TxID_Master_SendBackFund :: LedgerApiV2.MintingPolicy,
         pppPolicy_TxID_Master_SendBackDeposit :: LedgerApiV2.MintingPolicy,
@@ -89,6 +91,7 @@ data PABPoolParams = PABPoolParams
         pppCurSymbol_TxID_Master_SplitFund :: LedgerApiV2.CurrencySymbol,
         pppCurSymbol_TxID_Master_ClosePool :: LedgerApiV2.CurrencySymbol,
         pppCurSymbol_TxID_Master_TerminatePool :: LedgerApiV2.CurrencySymbol,
+        pppCurSymbol_TxID_Master_Emergency :: LedgerApiV2.CurrencySymbol,
         pppCurSymbol_TxID_Master_DeleteFund :: LedgerApiV2.CurrencySymbol,
         pppCurSymbol_TxID_Master_SendBackFund :: LedgerApiV2.CurrencySymbol,
         pppCurSymbol_TxID_Master_SendBackDeposit :: LedgerApiV2.CurrencySymbol,
@@ -189,6 +192,14 @@ newtype PABMasterClosePoolParams = PABMasterClosePoolParams
 newtype PABMasterTerminatePoolParams = PABMasterTerminatePoolParams
     { 
         pmtPABPoolParams :: PABPoolParams
+    } 
+    deriving (P.Eq, P.Show, P.Ord, GHCGenerics.Generic, DataAeson.ToJSON, DataAeson.FromJSON, DataOpenApiSchema.ToSchema, Schema.ToSchema)
+
+------------------------------------------------------------------------------------------
+
+newtype PABMasterEmergencyParams = PABMasterEmergencyParams
+    { 
+        pmePABPoolParams :: PABPoolParams
     } 
     deriving (P.Eq, P.Show, P.Ord, GHCGenerics.Generic, DataAeson.ToJSON, DataAeson.FromJSON, DataOpenApiSchema.ToSchema, Schema.ToSchema)
 

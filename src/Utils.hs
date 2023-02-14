@@ -18,7 +18,9 @@
 -- {-# LANGUAGE TupleSections                            #-}
 {-# LANGUAGE AllowAmbiguousTypes                #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE Strict #-}
 -- {-# LANGUAGE NumericUnderscores                 #-}
+{- HLINT ignore "Use camelCase" -}
 ------------------------------------------------------------------------------------------
 module Utils where
 ------------------------------------------------------------------------------------------
@@ -72,7 +74,8 @@ import qualified PlutusTx
 import qualified PlutusTx.Builtins                                            as TxBuiltins (toBuiltin)
 import qualified PlutusTx.Builtins.Class                                as TxBuiltinsClass
 import qualified PlutusTx.Builtins.Internal                         as TxBuiltinsInternal (BuiltinByteString (..)) --decodeUtf8
-import                     PlutusTx.Prelude                                             ( (>>), return, Bool(True), Maybe(..), Either(..), BuiltinByteString, Semigroup((<>)), sha2_256, ($), (.), fst, (<$>), (++), maybe )
+--decodeUtf8
+import                     PlutusTx.Prelude                                             ( return, Bool(True), Maybe(..), Either(..), BuiltinByteString, Semigroup((<>)), sha2_256, ($), (.), fst, (<$>), (++), maybe, Integer )
 import qualified Prelude                                                                as P
 import qualified System.Directory                                             as SystemDirectory
 import qualified System.FilePath.Posix                                    as SystemFilePathPosix
@@ -538,27 +541,44 @@ validatorAddrToAddrBech32Mainnet addr = do
 
 ----------------------------------------------------------------------------------------
 
-evaluateScript :: LedgerApiV2.Validator -> P.IO ()
-evaluateScript validator = do
+evaluateScriptValidator :: LedgerApiV2.Validator -> [PlutusTx.Data] -> (LedgerApiV2.LogOutput, P.Either LedgerApiV2.EvaluationError LedgerApiV2.ExBudget, Integer)
+evaluateScriptValidator validator datas =
     let
         !pv = LedgerApiV2.ProtocolVersion 6 0
 
-        !codeValidator = validator
+        !scriptUnValidatorV2 = Utils.getScriptUnValidator validator
 
-        !scriptUnValidatorV2 = Utils.getScriptUnValidator codeValidator
         !scriptShortBsV2 = Utils.getScriptShortBs scriptUnValidatorV2
         --scriptSerialisedV2 = Utils.getScriptSerialised scriptShortBsV2
 
-        !datums = []
+        !(logout, e) = LedgerApiV2.evaluateScriptCounting pv LedgerApiV2.Verbose LedgerEvaluationContextV2.evalCtxForTesting scriptShortBsV2 datas
 
-        !(logout, e) = LedgerApiV2.evaluateScriptCounting pv LedgerApiV2.Verbose LedgerEvaluationContextV2.evalCtxForTesting scriptShortBsV2 datums
+        !size = LedgerScriptsV1.scriptSize scriptUnValidatorV2
 
-    P.print ("Log output" :: P.String) >> P.print logout
-    case e of
-        Left evalErr -> P.print ("Eval Error" :: P.String) >> P.print evalErr
-        Right exbudget -> do
-            P.print ("Ex Budget" :: P.String) >> P.print exbudget
-            P.print ("Script size " :: P.String) >> P.print (Ledger.scriptSize scriptUnValidatorV2)
+    in 
+        (logout, e, size)
+  
 
+----------------------------------------------------------------------------------------
 
+evaluateScriptMint :: LedgerApiV2.MintingPolicy -> [PlutusTx.Data] -> (LedgerApiV2.LogOutput, P.Either LedgerApiV2.EvaluationError LedgerApiV2.ExBudget, Integer)
+evaluateScriptMint policy datas =
+    let
+        !pv = LedgerApiV2.ProtocolVersion 6 0
+
+        !scriptMintingPolicyV2 = Utils.getScriptMintingPolicy policy
+
+        !scriptShortBsV2 = Utils.getScriptShortBs scriptMintingPolicyV2
+        --scriptSerialisedV1 = Utils.getScriptSerialisedV1 scriptShortBsV1
+        
+        exBudget :: LedgerApiV2.ExBudget
+        exBudget = LedgerApiV2.ExBudget 10000000000 14000000
+    
+        -- !(logout, e) = Ledge rApiV2.evaluateScriptCounting pv LedgerApiV2.Verbose LedgerEvaluationContextV2.evalCtxForTesting scriptShortBsV2 datas
+        !(logout, e) = LedgerApiV2.evaluateScriptRestricting pv LedgerApiV2.Verbose LedgerEvaluationContextV2.evalCtxForTesting exBudget scriptShortBsV2 datas
+
+        !size = LedgerScriptsV1.scriptSize scriptMintingPolicyV2
+   in 
+        (logout, e, size)
+  
 ----------------------------------------------------------------------------------------

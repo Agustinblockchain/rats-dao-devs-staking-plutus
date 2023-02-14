@@ -20,6 +20,7 @@
 {-# LANGUAGE NumericUnderscores         #-}
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+---- {-# LANGUAGE Strict #-}
 -----------------------------------------------------------------------------------------
 module Validators.StakePlusV2.Types.DatumsValidator where
 -----------------------------------------------------------------------------------------
@@ -65,6 +66,7 @@ data PoolDatumTypo  = PoolDatumTypo {
         pdTotalCashedOut :: Integer,
         pdClosedAt :: Maybe LedgerApiV2.POSIXTime,
         pdIsTerminated  :: Integer,
+        pdIsEmergency  :: Integer,
         pdMinAda :: Integer
     }
     deriving (P.Ord, P.Eq, P.Show, GHCGenerics.Generic, DataAeson.ToJSON, DataAeson.FromJSON)
@@ -181,8 +183,8 @@ mkMasterFunder master fund claimedFund minAda = MasterFunder { mfMaster = master
 ------------------------------------------------------------------------------------------
 
 {-# INLINABLE mkPoolDatumTypo #-}
-mkPoolDatumTypo :: [MasterFunder] -> Integer -> Integer -> Maybe LedgerApiV2.POSIXTime -> Integer -> Integer ->  PoolDatumTypo
-mkPoolDatumTypo masterFunders fundCount totalCashedOut isClosedAt isTerminated minAda =
+mkPoolDatumTypo :: [MasterFunder] -> Integer -> Integer -> Maybe LedgerApiV2.POSIXTime -> Integer -> Integer -> Integer -> PoolDatumTypo
+mkPoolDatumTypo masterFunders fundCount totalCashedOut isClosedAt isTerminated isEmergency minAda =
     let
         compareMasterFunders :: MasterFunder -> MasterFunder -> Ordering
         compareMasterFunders masterFunder1 masterFunder2
@@ -198,14 +200,15 @@ mkPoolDatumTypo masterFunders fundCount totalCashedOut isClosedAt isTerminated m
                 pdTotalCashedOut = totalCashedOut,
                 pdClosedAt = isClosedAt,
                 pdIsTerminated = isTerminated,
+                pdIsEmergency = isEmergency,
                 pdMinAda = minAda
             }
 
 ------------------------------------------------------------------------------------------
 
 {-# INLINABLE mkPoolDatum #-}
-mkPoolDatum :: [MasterFunder] -> Integer -> Integer -> Maybe LedgerApiV2.POSIXTime -> Integer -> Integer ->  DatumValidator
-mkPoolDatum masterFunders fundCount totalCashedOut isClosedAt isTerminated minAda = PoolDatum $ mkPoolDatumTypo masterFunders fundCount totalCashedOut isClosedAt isTerminated minAda
+mkPoolDatum :: [MasterFunder] -> Integer -> Integer -> Maybe LedgerApiV2.POSIXTime -> Integer -> Integer -> Integer -> DatumValidator
+mkPoolDatum masterFunders fundCount totalCashedOut isClosedAt isTerminated isEmergency minAda = PoolDatum $ mkPoolDatumTypo masterFunders fundCount totalCashedOut isClosedAt isTerminated isEmergency minAda
 
 ------------------------------------------------------------------------------------------
       
@@ -254,5 +257,10 @@ type TxOut_Value_And_PoolDatum = (LedgerApiV2.Value, PoolDatumTypo)
 type TxOut_Value_And_FundDatum = (LedgerApiV2.Value, FundDatumTypo)
 type TxOut_Value_And_UserDatum = (LedgerApiV2.Value, UserDatumTypo)
 type TxOut_Value_And_ScriptDatum = (LedgerApiV2.Value, ScriptDatumTypo)
+
+type TxOut_Value_And_PoolDatumEX = (Integer, PoolDatumTypo)
+type TxOut_Value_And_UserDatumEX = (Integer, UserDatumTypo)
+type TxOut_Value_And_FundDatumEX = (Integer, FundDatumTypo)
+type TxOut_Value_And_ScriptDatumEX = (Integer, ScriptDatumTypo)
 
 --------------------------------------------------------------------------------------------

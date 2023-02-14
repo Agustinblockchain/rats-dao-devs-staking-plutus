@@ -20,6 +20,7 @@
 -- {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE Strict #-}
 {- HLINT ignore "Use camelCase" -}
 ------------------------------------------------------------------------------------------
 module Deploy where
@@ -27,71 +28,72 @@ module Deploy where
 -- Import Externos
 ------------------------------------------------------------------------------------------
 import qualified Cardano.Api as CardanoApi
--- import qualified Cardano.Api.Shelley                                                                                                     as ApiShelley
--- import qualified Cardano.Ledger.Alonzo                                                                                                 as CardanoLedgerAlonzo (AlonzoEra)
--- import qualified Cardano.Ledger.Alonzo.Language                                                                                as CardanoLedgerAlonzoLanguage    (Language (..))
--- import qualified Cardano.Ledger.Alonzo.Scripts                                                                                 as CardanoLedgerAlonzoScripts (ExUnits (..), Script (..))
--- import qualified Cardano.Crypto.Hash.Class                                                                                         as CryptoHashClass (hashToBytes)
--- import qualified Cardano.Ledger.BaseTypes                                                                                            as LedgerBaseTypes (certIxToInt, txIxToInt)
--- import qualified Cardano.Ledger.Credential                                                                                         as LedgerCredential
--- import qualified Cardano.Ledger.Crypto                                                                                                 as LedgerCrypto (StandardCrypto)
--- import qualified Cardano.Ledger.Hashes                                                                                                 as LedgerHashes (ScriptHash (..))
--- import qualified Cardano.Ledger.Keys                                                                                                     as LedgerKeys (KeyHash (..))
--- import qualified Codec.Serialise                                                                                                             as CodecSerialise (serialise)
--- import qualified Data.Aeson                                                                                                                        as DataAeson (decode) --, encode
-import qualified Data.ByteString                                                                                                                    as DataByteString
--- import qualified Data.ByteString.Lazy                                                                                                    as DataByteStringLazy
--- import qualified Data.ByteString.Short                                                                                                 as SBS
--- import qualified Data.ByteString.Char8                                                                                                 as DataByteStringChar8
-import qualified Data.Maybe                                                                                                                             as DataMaybe (fromJust) --,fromMaybe,
-import qualified Data.List                                                                                                                                as DataList
-import qualified Data.List.Split                                                                                                                    as DataListSplit
--- import qualified Data.Map                                                                                                                            as DataMap
--- import qualified Data.String                                                                                                                     as DataString (IsString (fromString))
--- import qualified Data.Text                                                                                                                         as DataText (pack, Text) --,
--- import qualified Data.Text.Internal.Search                                                                                         as DataTextSearch
-import qualified Data.Time                                                                                                                                as DataTime
-import qualified Data.Time.Clock.POSIX                                                                                                        as DataTimeClockPOSIX (getPOSIXTime)
+-- import qualified Cardano.Api.Shelley                                 as ApiShelley
+-- import qualified Cardano.Ledger.Alonzo                             as CardanoLedgerAlonzo (AlonzoEra)
+-- import qualified Cardano.Ledger.Alonzo.Language                as CardanoLedgerAlonzoLanguage    (Language (..))
+-- import qualified Cardano.Ledger.Alonzo.Scripts             as CardanoLedgerAlonzoScripts (ExUnits (..), Script (..))
+-- import qualified Cardano.Crypto.Hash.Class                     as CryptoHashClass (hashToBytes)
+-- import qualified Cardano.Ledger.BaseTypes                        as LedgerBaseTypes (certIxToInt, txIxToInt)
+-- import qualified Cardano.Ledger.Credential                     as LedgerCredential
+-- import qualified Cardano.Ledger.Crypto                             as LedgerCrypto (StandardCrypto)
+-- import qualified Cardano.Ledger.Hashes                             as LedgerHashes (ScriptHash (..))
+-- import qualified Cardano.Ledger.Keys                                 as LedgerKeys (KeyHash (..))
+-- import qualified Codec.Serialise                  as CodecSerialise (serialise)
+-- import qualified Data.Aeson                             as DataAeson (decode) --, encode
+-- import qualified Data.ByteString                         as DataByteString
+-- import qualified Data.ByteString.Lazy                                as DataByteStringLazy
+-- import qualified Data.ByteString.Short                             as SBS
+-- import qualified Data.ByteString.Char8                             as DataByteStringChar8
+import qualified Data.Maybe                                  as DataMaybe (fromJust) --,fromMaybe,
+-- import qualified Data.List                                     as DataList
+import qualified Data.List.Split                         as DataListSplit
+-- import qualified Data.Map                                 as DataMap
+-- import qualified Data.String                          as DataString (IsString (fromString))
+-- import qualified Data.Text                              as DataText (pack, Text) --,
+-- import qualified Data.Text.Internal.Search                     as DataTextSearch
+import qualified Data.Time                                     as DataTime
+import qualified Data.Time.Clock.POSIX             as DataTimeClockPOSIX (getPOSIXTime)
 -- import qualified Ledger                                                            
-import qualified Ledger.Address                                                                                                                     as LedgerAddress (Address)
--- import qualified Ledger.Bytes                                                                                                                    as LedgerBytes (LedgerBytes(LedgerBytes), fromHex)
-import qualified Ledger.Value                                                                                                                         as LedgerValue
--- import qualified Network.Curl                                                                                                                    as NetworkCurl
--- import qualified Network.Curl.Aeson                                                                                                        as NetworkCurlAeson
-import qualified Plutus.V1.Ledger.Scripts                                                                                                 as LedgerScriptsV1
-import qualified Plutus.V2.Ledger.Api                                                                                                         as LedgerApiV2
--- import qualified Plutus.V2.Ledger.Credential                                                                                     as LedgerCredentialV2
--- import qualified Plutus.V2.Ledger.Crypto                                                                                             as LedgerCryptoV2
-import qualified Plutus.V2.Ledger.EvaluationContext                                                                             as LedgerEvaluationContextV2
--- import qualified Plutus.V2.Ledger.Scripts                                                                                            as LedgerScriptsV2
--- import qualified Plutus.V2.Ledger.Value                                                                                                as LedgerValueV2 (TokenName (..))
+import qualified Ledger.Address                          as LedgerAddress (Address)
+-- import qualified Ledger.Bytes                         as LedgerBytes (LedgerBytes(LedgerBytes), fromHex)
+import qualified Ledger.Value                              as LedgerValue
+-- import qualified Network.Curl                         as NetworkCurl
+-- import qualified Network.Curl.Aeson             as NetworkCurlAeson
+-- import qualified Plutus.V1.Ledger.Scripts                             as LedgerScriptsV1
+import qualified Plutus.V2.Ledger.Api              as LedgerApiV2
+-- import qualified Plutus.V2.Ledger.Credential                 as LedgerCredentialV2
+-- import qualified Plutus.V2.Ledger.Crypto                         as LedgerCryptoV2
+--import qualified Plutus.V2.Ledger.EvaluationContext              as LedgerEvaluationContextV2
+-- import qualified Plutus.V2.Ledger.Scripts                        as LedgerScriptsV2
+-- import qualified Plutus.V2.Ledger.Value                            as LedgerValueV2 (TokenName (..))
 -- import qualified PlutusTx                                                            
-import qualified PlutusTx.Builtins.Class                                                                                                    as TxBuiltinsClass
--- import qualified PlutusTx.Builtins                                                                                                         as TxBuiltins
--- import qualified PlutusTx.Builtins.Internal                                                                                        as TxBuiltinsInternal (BuiltinByteString (..))
-import                     PlutusTx.Prelude                                                                                                                 hiding (unless)
-import qualified System.Directory                                                                                                                 as SystemDirectory
--- import qualified System.Environment                                                                                                        as SystemEnvironment (lookupEnv)
-import qualified System.FilePath.Posix                                                                                                        as SystemFilePathPosix
--- import qualified Text.RE.Replace                                                                                                             as TextREReplace
--- import qualified Text.RE.TDFA.String                                                                                                     as TextRETDFAString
-import qualified Text.Read                                                                                                                                as TextRead (readMaybe)
-import qualified Text.Hex                                                                                                                                 as TextHex
--- import qualified Wallet.Emulator.Wallet                                                                                                as WalletEmulator            (WalletId (..)) --, Wallet (..)
--- import qualified Wallet.Types                                                                                                                    as WalletTypes (ContractInstanceId (..))
-import qualified Prelude                                                                                                                                    as P
+import qualified PlutusTx.Builtins.Class                                as TxBuiltinsClass
+-- import qualified PlutusTx.Builtins              as TxBuiltins
+-- import qualified PlutusTx.Builtins.Internal                    as TxBuiltinsInternal (BuiltinByteString (..))
+import                     PlutusTx.Prelude                      hiding (unless)
+import qualified System.Directory                      as SystemDirectory
+-- import qualified System.Environment             as SystemEnvironment (lookupEnv)
+import qualified System.FilePath.Posix             as SystemFilePathPosix
+-- import qualified Text.RE.Replace                  as TextREReplace
+-- import qualified Text.RE.TDFA.String                                 as TextRETDFAString
+import qualified Text.Read                                     as TextRead (readMaybe)
+import qualified Text.Hex                                      as TextHex
+-- import qualified Wallet.Emulator.Wallet                            as WalletEmulator            (WalletId (..)) --, Wallet (..)
+-- import qualified Wallet.Types                         as WalletTypes (ContractInstanceId (..))
+import qualified Prelude                                         as P
 ------------------------------------------------------------------------------------------
 -- Import Internos
 ------------------------------------------------------------------------------------------
--- import qualified Validators.StakePlusV2.Helpers                                                                                as Helpers
-import qualified Validators.StakePlusV2.OnChain.Core.Validator                                                        as OnChain
--- import qualified Validators.StakePlusV2.OnChain.TestInputsOutputs.Policy                                    as OnChainTestInputsOutputs
-import qualified Validators.StakePlusV2.OnChain.Tokens.PoolID.Policy                                            as OnChainNFT
+-- import qualified Validators.StakePlusV2.Helpers                               as Helpers
+import qualified Validators.StakePlusV2.OnChain.Core.Validator                       as OnChain
+-- import qualified Validators.StakePlusV2.OnChain.TestInputsOutputs.Policy              as OnChainTestInputsOutputs
+import qualified Validators.StakePlusV2.OnChain.Tokens.PoolID.Policy                        as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Fund                        as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.FundAndMerge        as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund                     as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool                     as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool             as OnChainNFT
+import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Emergency             as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund                    as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund        as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit    as OnChainNFT
@@ -207,10 +209,18 @@ writeMintingPolicy policy curSymbol path file    = do
 
 -- evaluateScriptStakePlus :: P.IO ()
 -- evaluateScriptStakePlus = do
---     let pParams = T.examplePoolParams
---             codeValidator = OnChain.codeValidator pParams
+--     let
+--         pParams = T.examplePoolParams
+--         codeValidator = OnChain.codeValidator pParams
+--         !datas = []
+--         (logout, e, size) = Utils.evaluateScriptValidator codeValidator datas
 
---     Utils.evaluateScriptV2 codeValidator
+--     P.print ("Log output" :: P.String) >> P.print logout
+--     case e of
+--         Left evalErr -> P.print ("Eval Error" :: P.String) >> P.print evalErr
+--         Right exbudget -> do
+--             P.print ("Ex Budget" :: P.String) >> P.print exbudget
+--             P.print ("Script size " :: P.String) >> P.print size
 
 ----------------------------------------------------------------------------------------------------
 
@@ -218,21 +228,16 @@ evaluateScriptMint_Master_Fund :: P.IO ()
 evaluateScriptMint_Master_Fund = do
     let
         !pParams = T.examplePoolParams
-        !pv = LedgerApiV2.ProtocolVersion 6 0
+        !mintingPolicy = OnChainNFT.policy_TxID_Master_Fund pParams
+        !datas = []
+        (logout, e, size) =  Utils.evaluateScriptMint mintingPolicy datas
 
-        !scriptMintingPolicyV2 = Utils.getScriptMintingPolicy $ OnChainNFT.policy_TxID_Master_Fund pParams
-        !scriptShortBsV2 = Utils.getScriptShortBs scriptMintingPolicyV2
-        --scriptSerialisedV1 = Utils.getScriptSerialisedV1 scriptShortBsV1
-        !datums = []
-
-        !(logout, e) = LedgerApiV2.evaluateScriptCounting pv LedgerApiV2.Verbose LedgerEvaluationContextV2.evalCtxForTesting scriptShortBsV2 datums
-     
     P.print ("Log output" :: P.String) >> P.print logout
     case e of
         Left evalErr -> P.print ("Eval Error" :: P.String) >> P.print evalErr
         Right exbudget -> do
             P.print ("Ex Budget" :: P.String) >> P.print exbudget
-            P.print ("Script size " :: P.String) >> P.print (LedgerScriptsV1.scriptSize scriptMintingPolicyV2)
+            P.print ("Script size " :: P.String) >> P.print size
 
 ------------------------------------------------------------------------------------------
 
@@ -414,8 +419,7 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 
     let
         !poolID_CS = curSymbol_PoolID
-        !poolID_TN = T.poolID_TN
-        !poolID_AC = LedgerValue.AssetClass ( poolID_CS, poolID_TN)
+        !poolID_AC = LedgerValue.AssetClass ( poolID_CS, T.poolID_TN)
 
         !pParams =
             T.PoolParams
@@ -434,7 +438,7 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
                 }
 
     P.putStrLn $ "PoolID TxOutRef: " ++ P.show poolID_TxOutRef
-    P.putStrLn $ "PoolID TN: " ++ P.show poolID_TN
+    P.putStrLn $ "PoolID TN: " ++ P.show T.poolID_TN
     P.putStrLn $ "PoolID CS: " ++ P.show poolID_CS
     P.putStrLn $ "PoolID AC: " ++ P.show poolID_AC
 
@@ -442,92 +446,99 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
     P.putStrLn "Generating 'Master Fund' Minting Script..."
     let
         !policy_TxID_Master_Fund = OnChainNFT.policy_TxID_Master_Fund pParams
-        !curSymbol_TxID_Master_Fund = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
-    _ <- writeMintingPolicy policy_TxID_Master_Fund curSymbol_TxID_Master_Fund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
+        !txID_Master_Fund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
+    _ <- writeMintingPolicy policy_TxID_Master_Fund txID_Master_Fund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
 
     writeEstado basePathFiles nombrePool "Generating 'User Deposit' Minting Script..."
     P.putStrLn "Generating 'User Deposit' Minting Script..."
     let
         !policy_TxID_User_Deposit = OnChainNFT.policy_TxID_User_Deposit pParams
-        !curSymbol_TxID_User_Deposit = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
-    _ <- writeMintingPolicy policy_TxID_User_Deposit curSymbol_TxID_User_Deposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
+        !txID_User_Deposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
+    _ <- writeMintingPolicy policy_TxID_User_Deposit txID_User_Deposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
+    
+    writeEstado basePathFiles nombrePool "Generating 'User Harvest' Minting Script..."
+    P.putStrLn "Generating 'User Harvest' Minting Script..."
+    let
+        !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams txID_Master_Fund_CS txID_User_Deposit_CS
+        !txID_User_Harvest_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
+    _ <- writeMintingPolicy policy_TxID_User_Harvest txID_User_Harvest_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Fund And Merge' Minting Script..."
     P.putStrLn "Generating 'Master Fund And Merge' Minting Script..."
     let
-        !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams curSymbol_TxID_Master_Fund
-        !curSymbol_TxID_Master_FundAndMerge = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
-    _ <- writeMintingPolicy policy_TxID_Master_FundAndMerge curSymbol_TxID_Master_FundAndMerge (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
+        !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams txID_Master_Fund_CS
+        !txID_Master_FundAndMerge_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
+    _ <- writeMintingPolicy policy_TxID_Master_FundAndMerge txID_Master_FundAndMerge_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Split Fund' Minting Script..."
     P.putStrLn "Generating 'Master Split Fund' Minting Script..."
     let
-        !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams curSymbol_TxID_Master_Fund
-        !curSymbol_TxID_Master_SplitFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
-    _ <- writeMintingPolicy policy_TxID_Master_SplitFund curSymbol_TxID_Master_SplitFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
+        !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams txID_Master_Fund_CS
+        !txID_Master_SplitFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
+    _ <- writeMintingPolicy policy_TxID_Master_SplitFund txID_Master_SplitFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Close Pool' Minting Script..."
     P.putStrLn "Generating 'Master Close Pool' Minting Script..."
     let
         !policy_TxID_Master_ClosePool = OnChainNFT.policy_TxID_Master_ClosePool pParams
-        !curSymbol_TxID_Master_ClosePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
-    _ <- writeMintingPolicy policy_TxID_Master_ClosePool curSymbol_TxID_Master_ClosePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
+        !txID_Master_ClosePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
+    _ <- writeMintingPolicy policy_TxID_Master_ClosePool txID_Master_ClosePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Terminate Pool' Minting Script..."
     P.putStrLn "Generating 'Master Terminate Pool' Minting Script..."
     let
         !policy_TxID_Master_TerminatePool = OnChainNFT.policy_TxID_Master_TerminatePool pParams
-        !curSymbol_TxID_Master_TerminatePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
-    _ <- writeMintingPolicy policy_TxID_Master_TerminatePool curSymbol_TxID_Master_TerminatePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
+        !txID_Master_TerminatePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
+    _ <- writeMintingPolicy policy_TxID_Master_TerminatePool txID_Master_TerminatePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
+
+    writeEstado basePathFiles nombrePool "Generating 'Master Emergency' Minting Script..."
+    P.putStrLn "Generating 'Master Emergency' Minting Script..."
+    let
+        !policy_TxID_Master_Emergency = OnChainNFT.policy_TxID_Master_Emergency pParams
+        !txID_Master_Emergency_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_Emergency
+    _ <- writeMintingPolicy policy_TxID_Master_Emergency txID_Master_Emergency_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Emergency"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Delete Fund' Minting Script..."
     P.putStrLn "Generating 'Master Delete Fund' Minting Script..."
     let
-        !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams curSymbol_TxID_Master_Fund
-        !curSymbol_TxID_Master_DeleteFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
-    _ <- writeMintingPolicy policy_TxID_Master_DeleteFund curSymbol_TxID_Master_DeleteFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
+        !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams txID_Master_Fund_CS
+        !txID_Master_DeleteFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
+    _ <- writeMintingPolicy policy_TxID_Master_DeleteFund txID_Master_DeleteFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Send Back Fund' Minting Script..."
     P.putStrLn "Generating 'Master Send Back Fund' Minting Script..."
     let
         !policy_TxID_Master_SendBackFund = OnChainNFT.policy_TxID_Master_SendBackFund pParams
-        !curSymbol_TxID_Master_SendBackFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
-    _ <- writeMintingPolicy policy_TxID_Master_SendBackFund curSymbol_TxID_Master_SendBackFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
+        !txID_Master_SendBackFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
+    _ <- writeMintingPolicy policy_TxID_Master_SendBackFund txID_Master_SendBackFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Send Back Deposit' Minting Script..."
     P.putStrLn "Generating 'Master Send Back Deposit' Minting Script..."
     let
-        !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-        !curSymbol_TxID_Master_SendBackDeposit = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
-    _ <- writeMintingPolicy policy_TxID_Master_SendBackDeposit curSymbol_TxID_Master_SendBackDeposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
+        !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams txID_Master_Fund_CS txID_User_Deposit_CS txID_User_Harvest_CS
+        !txID_Master_SendBackDeposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
+    _ <- writeMintingPolicy policy_TxID_Master_SendBackDeposit txID_Master_SendBackDeposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Add Scripts' Minting Script..."
     P.putStrLn "Generating 'Master Add Scripts' Minting Script..."
     let
         !policy_TxID_Master_AddScripts = OnChainNFT.policy_TxID_Master_AddScripts pParams
-        !curSymbol_TxID_Master_AddScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
-    _ <- writeMintingPolicy policy_TxID_Master_AddScripts curSymbol_TxID_Master_AddScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
+        !txID_Master_AddScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
+    _ <- writeMintingPolicy policy_TxID_Master_AddScripts txID_Master_AddScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
 
     writeEstado basePathFiles nombrePool "Generating 'Master Delete Scripts' Minting Script..."
     P.putStrLn "Generating 'Master Delete Scripts' Minting Script..."
     let
-        !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams curSymbol_TxID_Master_AddScripts
-        !curSymbol_TxID_Master_DeleteScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
-    _ <- writeMintingPolicy policy_TxID_Master_DeleteScripts curSymbol_TxID_Master_DeleteScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
-
-    writeEstado basePathFiles nombrePool "Generating 'User Harvest' Minting Script..."
-    P.putStrLn "Generating 'User Harvest' Minting Script..."
-    let
-        !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-        !curSymbol_TxID_User_Harvest = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
-    _ <- writeMintingPolicy policy_TxID_User_Harvest curSymbol_TxID_User_Harvest (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
+        !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams txID_Master_AddScripts_CS
+        !txID_Master_DeleteScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
+    _ <- writeMintingPolicy policy_TxID_Master_DeleteScripts txID_Master_DeleteScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
 
     writeEstado basePathFiles nombrePool "Generating 'User Withdraw' Minting Script..."
     P.putStrLn "Generating 'User Withdraw' Minting Script..."
     let
-        !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-        !curSymbol_TxID_User_Withdraw = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
-    _ <- writeMintingPolicy policy_TxID_User_Withdraw curSymbol_TxID_User_Withdraw (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Withdraw"
+        !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams txID_Master_Fund_CS txID_User_Deposit_CS txID_User_Harvest_CS
+        !txID_User_Withdraw_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
+    _ <- writeMintingPolicy policy_TxID_User_Withdraw txID_User_Withdraw_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Withdraw"
 
     -- writeEstado basePathFiles nombrePool "Creating Minting Policy Test..." 
     -- P.putStrLn "Creating Minting Policy Test..."
@@ -553,7 +564,7 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
     P.putStrLn "Generating Main Validator Script..."
 
     let
-            validator = OnChain.codeValidator pParams curSymbol_TxID_Master_Fund curSymbol_TxID_Master_FundAndMerge curSymbol_TxID_Master_SplitFund curSymbol_TxID_Master_ClosePool curSymbol_TxID_Master_TerminatePool curSymbol_TxID_Master_DeleteFund    curSymbol_TxID_Master_SendBackFund curSymbol_TxID_Master_SendBackDeposit curSymbol_TxID_Master_AddScripts curSymbol_TxID_Master_DeleteScripts curSymbol_TxID_User_Deposit curSymbol_TxID_User_Harvest curSymbol_TxID_User_Withdraw
+            validator = OnChain.codeValidator pParams txID_Master_Fund_CS txID_Master_FundAndMerge_CS txID_Master_SplitFund_CS txID_Master_ClosePool_CS txID_Master_TerminatePool_CS txID_Master_Emergency_CS txID_Master_DeleteFund_CS txID_Master_SendBackFund_CS txID_Master_SendBackDeposit_CS txID_Master_AddScripts_CS txID_Master_DeleteScripts_CS txID_User_Deposit_CS txID_User_Harvest_CS txID_User_Withdraw_CS
             hash = Utils.hashValidator validator
             address = Utils.addressValidator hash
     _ <- writeValidator validator (basePathFiles SystemFilePathPosix.</> nombrePool) "Validator"
@@ -586,6 +597,7 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
                     T.pppPolicy_TxID_Master_SplitFund    = policy_TxID_Master_SplitFund,
                     T.pppPolicy_TxID_Master_ClosePool    = policy_TxID_Master_ClosePool,
                     T.pppPolicy_TxID_Master_TerminatePool    = policy_TxID_Master_TerminatePool,
+                    T.pppPolicy_TxID_Master_Emergency    = policy_TxID_Master_Emergency,
                     T.pppPolicy_TxID_Master_DeleteFund    = policy_TxID_Master_DeleteFund,
                     T.pppPolicy_TxID_Master_SendBackFund    = policy_TxID_Master_SendBackFund,
                     T.pppPolicy_TxID_Master_SendBackDeposit    = policy_TxID_Master_SendBackDeposit,
@@ -596,20 +608,21 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
                     T.pppPolicy_TxID_User_Harvest    = policy_TxID_User_Harvest,
                     T.pppPolicy_TxID_User_Withdraw    = policy_TxID_User_Withdraw,
 
-                    T.pppCurSymbol_TxID_Master_Fund = curSymbol_TxID_Master_Fund,
-                    T.pppCurSymbol_TxID_Master_FundAndMerge = curSymbol_TxID_Master_FundAndMerge,
-                    T.pppCurSymbol_TxID_Master_SplitFund = curSymbol_TxID_Master_SplitFund,
-                    T.pppCurSymbol_TxID_Master_ClosePool = curSymbol_TxID_Master_ClosePool,
-                    T.pppCurSymbol_TxID_Master_TerminatePool = curSymbol_TxID_Master_TerminatePool,
-                    T.pppCurSymbol_TxID_Master_DeleteFund = curSymbol_TxID_Master_DeleteFund,
-                    T.pppCurSymbol_TxID_Master_SendBackFund = curSymbol_TxID_Master_SendBackFund,
-                    T.pppCurSymbol_TxID_Master_SendBackDeposit = curSymbol_TxID_Master_SendBackDeposit,
-                    T.pppCurSymbol_TxID_Master_AddScripts = curSymbol_TxID_Master_AddScripts,
-                    T.pppCurSymbol_TxID_Master_DeleteScripts = curSymbol_TxID_Master_DeleteScripts,
+                    T.pppCurSymbol_TxID_Master_Fund = txID_Master_Fund_CS,
+                    T.pppCurSymbol_TxID_Master_FundAndMerge = txID_Master_FundAndMerge_CS,
+                    T.pppCurSymbol_TxID_Master_SplitFund = txID_Master_SplitFund_CS,
+                    T.pppCurSymbol_TxID_Master_ClosePool = txID_Master_ClosePool_CS,
+                    T.pppCurSymbol_TxID_Master_TerminatePool = txID_Master_TerminatePool_CS,
+                    T.pppCurSymbol_TxID_Master_Emergency = txID_Master_Emergency_CS,
+                    T.pppCurSymbol_TxID_Master_DeleteFund = txID_Master_DeleteFund_CS,
+                    T.pppCurSymbol_TxID_Master_SendBackFund = txID_Master_SendBackFund_CS,
+                    T.pppCurSymbol_TxID_Master_SendBackDeposit = txID_Master_SendBackDeposit_CS,
+                    T.pppCurSymbol_TxID_Master_AddScripts = txID_Master_AddScripts_CS,
+                    T.pppCurSymbol_TxID_Master_DeleteScripts = txID_Master_DeleteScripts_CS,
 
-                    T.pppCurSymbol_TxID_User_Deposit = curSymbol_TxID_User_Deposit,
-                    T.pppCurSymbol_TxID_User_Harvest = curSymbol_TxID_User_Harvest,
-                    T.pppCurSymbol_TxID_User_Withdraw = curSymbol_TxID_User_Withdraw
+                    T.pppCurSymbol_TxID_User_Deposit = txID_User_Deposit_CS,
+                    T.pppCurSymbol_TxID_User_Harvest = txID_User_Harvest_CS,
+                    T.pppCurSymbol_TxID_User_Withdraw = txID_User_Withdraw_CS
                 }
 
     Utils.writeEncodedToFile (basePathFiles SystemFilePathPosix.</> nombrePool SystemFilePathPosix.</> "PABPoolParams-HEX.json") pabPoolParams
@@ -802,23 +815,23 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --     P.putStrLn "Generating 'Master Fund' Minting Script..."
 --     let
 --         !policy_TxID_Master_Fund = OnChainNFT.policy_TxID_Master_Fund pParams
---         !curSymbol_TxID_Master_Fund = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
---     _ <- writeMintingPolicy policy_TxID_Master_Fund curSymbol_TxID_Master_Fund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
+--         !txID_Master_Fund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
+--     _ <- writeMintingPolicy policy_TxID_Master_Fund txID_Master_Fund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
 
 --     writeEstado basePathFiles nombrePool "Generating 'User Deposit' Minting Script..."
 --     P.putStrLn "Generating 'User Deposit' Minting Script..."
 --     let
 --         !policy_TxID_User_Deposit = OnChainNFT.policy_TxID_User_Deposit pParams
---         !curSymbol_TxID_User_Deposit = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
---     _ <- writeMintingPolicy policy_TxID_User_Deposit curSymbol_TxID_User_Deposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
+--         !txID_User_Deposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
+--     _ <- writeMintingPolicy policy_TxID_User_Deposit txID_User_Deposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
 
 --     if isElement "Master_FundAndMerge" scripts then do
 --         writeEstado basePathFiles nombrePool "Generating 'Master Fund And Merge' Minting Script..."
 --         P.putStrLn "Generating 'Master Fund And Merge' Minting Script..."
 --         let
---             !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams curSymbol_TxID_Master_Fund
---             !curSymbol_TxID_Master_FundAndMerge = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
---         writeMintingPolicy policy_TxID_Master_FundAndMerge curSymbol_TxID_Master_FundAndMerge (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
+--             !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams txID_Master_Fund_CS
+--             !txID_Master_FundAndMerge_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
+--         writeMintingPolicy policy_TxID_Master_FundAndMerge txID_Master_FundAndMerge_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
 --     else
 --         P.putStrLn "..."
 
@@ -826,9 +839,9 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         writeEstado basePathFiles nombrePool "Generating 'Master Split Fund' Minting Script..."
 --         P.putStrLn "Generating 'Master Split Fund' Minting Script..."
 --         let
---             !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams curSymbol_TxID_Master_Fund
---             !curSymbol_TxID_Master_SplitFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
---         writeMintingPolicy policy_TxID_Master_SplitFund curSymbol_TxID_Master_SplitFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
+--             !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams txID_Master_Fund_CS
+--             !txID_Master_SplitFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
+--         writeMintingPolicy policy_TxID_Master_SplitFund txID_Master_SplitFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
 --     else
 --         P.putStrLn "..."
 
@@ -837,8 +850,8 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         P.putStrLn "Generating 'Master Close Pool' Minting Script..."
 --         let
 --             !policy_TxID_Master_ClosePool = OnChainNFT.policy_TxID_Master_ClosePool pParams
---             !curSymbol_TxID_Master_ClosePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
---         writeMintingPolicy policy_TxID_Master_ClosePool curSymbol_TxID_Master_ClosePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
+--             !txID_Master_ClosePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
+--         writeMintingPolicy policy_TxID_Master_ClosePool txID_Master_ClosePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
 --     else
 --         P.putStrLn "..."
 
@@ -847,8 +860,8 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         P.putStrLn "Generating 'Master Terminate Pool' Minting Script..."
 --         let
 --             !policy_TxID_Master_TerminatePool = OnChainNFT.policy_TxID_Master_TerminatePool pParams
---             !curSymbol_TxID_Master_TerminatePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
---         writeMintingPolicy policy_TxID_Master_TerminatePool curSymbol_TxID_Master_TerminatePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
+--             !txID_Master_TerminatePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
+--         writeMintingPolicy policy_TxID_Master_TerminatePool txID_Master_TerminatePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
 --     else
 --         P.putStrLn "..."
 
@@ -856,9 +869,9 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         writeEstado basePathFiles nombrePool "Generating 'Master Delete Fund' Minting Script..."
 --         P.putStrLn "Generating 'Master Delete Fund' Minting Script..."
 --         let
---             !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams curSymbol_TxID_Master_Fund
---             !curSymbol_TxID_Master_DeleteFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
---         writeMintingPolicy policy_TxID_Master_DeleteFund curSymbol_TxID_Master_DeleteFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
+--             !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams txID_Master_Fund_CS
+--             !txID_Master_DeleteFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
+--         writeMintingPolicy policy_TxID_Master_DeleteFund txID_Master_DeleteFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
 --     else
 --         P.putStrLn "..."
 
@@ -867,8 +880,8 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         P.putStrLn "Generating 'Master Send Back Fund' Minting Script..."
 --         let
 --             !policy_TxID_Master_SendBackFund = OnChainNFT.policy_TxID_Master_SendBackFund pParams
---             !curSymbol_TxID_Master_SendBackFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
---         writeMintingPolicy policy_TxID_Master_SendBackFund curSymbol_TxID_Master_SendBackFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
+--             !txID_Master_SendBackFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
+--         writeMintingPolicy policy_TxID_Master_SendBackFund txID_Master_SendBackFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
 --     else
 --         P.putStrLn "..."
 
@@ -876,9 +889,9 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         writeEstado basePathFiles nombrePool "Generating 'Master Send Back Deposit' Minting Script..."
 --         P.putStrLn "Generating 'Master Send Back Deposit' Minting Script..."
 --         let
---             !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
---             !curSymbol_TxID_Master_SendBackDeposit = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
---         writeMintingPolicy policy_TxID_Master_SendBackDeposit curSymbol_TxID_Master_SendBackDeposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
+--             !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams txID_Master_Fund_CS txID_User_Deposit_CS
+--             !txID_Master_SendBackDeposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
+--         writeMintingPolicy policy_TxID_Master_SendBackDeposit txID_Master_SendBackDeposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
 --     else
 --         P.putStrLn "..."
 
@@ -886,16 +899,16 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --     P.putStrLn "Generating 'Master Add Scripts' Minting Script..."
 --     let
 --         !policy_TxID_Master_AddScripts = OnChainNFT.policy_TxID_Master_AddScripts pParams
---         !curSymbol_TxID_Master_AddScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
---     writeMintingPolicy policy_TxID_Master_AddScripts curSymbol_TxID_Master_AddScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
+--         !txID_Master_AddScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
+--     writeMintingPolicy policy_TxID_Master_AddScripts txID_Master_AddScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
 
 --     if isElement "Master_DeleteScripts" scripts then do
 --         writeEstado basePathFiles nombrePool "Generating 'Master Delete Scripts' Minting Script..."
 --         P.putStrLn "Generating 'Master Delete Scripts' Minting Script..."
 --         let
---             !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams curSymbol_TxID_Master_AddScripts
---             !curSymbol_TxID_Master_DeleteScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
---         writeMintingPolicy policy_TxID_Master_DeleteScripts curSymbol_TxID_Master_DeleteScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
+--             !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams txID_Master_AddScripts_CS
+--             !txID_Master_DeleteScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
+--         writeMintingPolicy policy_TxID_Master_DeleteScripts txID_Master_DeleteScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
 --     else
 --         P.putStrLn "..."
 
@@ -903,9 +916,9 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         writeEstado basePathFiles nombrePool "Generating 'User Harvest' Minting Script..."
 --         P.putStrLn "Generating 'User Harvest' Minting Script..."
 --         let
---             !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
---             !curSymbol_TxID_User_Harvest = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
---         writeMintingPolicy policy_TxID_User_Harvest curSymbol_TxID_User_Harvest (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
+--             !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams txID_Master_Fund_CS txID_User_Deposit_CS
+--             !txID_User_Harvest_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
+--         writeMintingPolicy policy_TxID_User_Harvest txID_User_Harvest_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
 --     else
 --         P.putStrLn "..."
 
@@ -913,9 +926,9 @@ exportarPoolParamsYScripts nombrePool mastersStr uTxOutRefStr beginAtPoolStr dea
 --         writeEstado basePathFiles nombrePool "Generating 'User Withdraw' Minting Script..."
 --         P.putStrLn "Generating 'User Withdraw' Minting Script..."
 --         let
---             !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
---             !curSymbol_TxID_User_Withdraw = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
---         writeMintingPolicy policy_TxID_User_Withdraw curSymbol_TxID_User_Withdraw (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Withdraw"
+--             !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams txID_Master_Fund_CS txID_User_Deposit_CS
+--             !txID_User_Withdraw_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
+--         writeMintingPolicy policy_TxID_User_Withdraw txID_User_Withdraw_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Withdraw"
 --     else
 --         P.putStrLn "..."
 

@@ -21,6 +21,7 @@
 -- {-# LANGUAGE NumericUnderscores         #-}
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.OffChain.OffChainHelpers where
@@ -112,8 +113,8 @@ getUTxO_With_PoolDatum poolID_AC uTxOs = do
     -- PlutusContract.logInfo @P.String $ TextPrintf.printf "getUTxO_With_PoolDatum : uTxOs: %s" (P.show  uTxOs)
     let
         -- !uTxOsWithPoolDatum = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <- DataMap.toList uTxOs, Helpers.datumMaybeIs_PoolDatum (getDatumFromDecoratedTxOut scriptDecoratedTxOut) ]
-        -- !uTxOsWithPoolDatum_And_Token = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <-  uTxOsWithPoolDatum, isNFTInDecoratedTxOut scriptDecoratedTxOut poolID_AC]
-        !uTxOsWithPoolDatum = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <-  DataMap.toList uTxOs, isNFTInDecoratedTxOut scriptDecoratedTxOut poolID_AC]
+        -- !uTxOsWithPoolDatum_And_Token = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <- uTxOsWithPoolDatum, isNFTInDecoratedTxOut scriptDecoratedTxOut poolID_AC]
+        !uTxOsWithPoolDatum = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <- DataMap.toList uTxOs, isNFTInDecoratedTxOut scriptDecoratedTxOut poolID_AC]
         -- PlutusContract.logInfo @P.String $ TextPrintf.printf "UTxOs List with Valid PoolDatum: %s" (P.show $ fst <$> uTxOsWithPoolDatumAndCorrectPoolIDAndCorrectValue)
     case uTxOsWithPoolDatum of
         [x] -> return $ Just x
@@ -146,9 +147,9 @@ getUTxOs_With_UserDatum userID_AC uTxOs = do
 ------------------------------------------------------------------------------------------
 
 getUTxO_With_ScriptDatum :: LedgerValue.AssetClass -> LedgerValue.AssetClass -> DataMap.Map LedgerApiV2.TxOutRef LedgerTx.DecoratedTxOut -> PlutusContract.Contract w s DataText.Text (Maybe (LedgerApiV2.TxOutRef, LedgerTx.DecoratedTxOut))
-getUTxO_With_ScriptDatum txID_Master_AddScripts_AC script_AC uTxOs = do
+getUTxO_With_ScriptDatum scriptID_AC script_AC uTxOs = do
     let
-        !uTxOsWithScriptDatum = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <- DataMap.toList uTxOs, isTokenInDecoratedTxOut scriptDecoratedTxOut txID_Master_AddScripts_AC && isTokenInDecoratedTxOut scriptDecoratedTxOut script_AC ]
+        !uTxOsWithScriptDatum = [ (txOutRef, scriptDecoratedTxOut) | (txOutRef, scriptDecoratedTxOut) <- DataMap.toList uTxOs, isTokenInDecoratedTxOut scriptDecoratedTxOut scriptID_AC && isTokenInDecoratedTxOut scriptDecoratedTxOut script_AC ]
     case uTxOsWithScriptDatum of
         [x] -> return $ Just x
         (x:_) -> return $ Just x
@@ -275,9 +276,9 @@ getFundDatumListWithNewValues harvest_AC harvest_CS haverstIsWithoutTokenName uT
                     ---------------
                     !newValue = value <> negate valueToSubstract
                     ---------------
-                    !newFundDatum = Helpers.mkUpdated_FundDatum_With_NewClaimRewards fundDatum' claim
+                    !newFundDatumTypo = Helpers.mkUpdated_FundDatum_With_NewClaimRewards fundDatum' claim
                     ---------------
-                    !(T.FundDatum newFundDatumTypo) = newFundDatum
+                    -- !(T.FundDatum newFundDatumTypo) = newFundDatum
                     ---------------
                 in
                     return [(newFundDatumTypo, newValue)]
@@ -299,9 +300,9 @@ getFundDatumListWithNewValues harvest_AC harvest_CS haverstIsWithoutTokenName uT
                     ---------------
                     !newValue = value <> negate valueToSubstract
                     ---------------
-                    !newFundDatum = Helpers.mkUpdated_FundDatum_With_NewClaimRewards fundDatum' amountCanUse
+                    !newFundDatumTypo = Helpers.mkUpdated_FundDatum_With_NewClaimRewards fundDatum' amountCanUse
                     ---------------
-                    !(T.FundDatum newFundDatumTypo) = newFundDatum
+                    -- !(T.FundDatum newFundDatumTypo) = newFundDatum
                     ---------------
                     !newClaim = claim - amountCanUse
                     ---------------
@@ -489,7 +490,6 @@ burntToken_With_RefPolicy uTxOs uTxOAtScriptWithScript redeemerBurn valueForBurn
 
 createValueAddingTokensOfCurrencySymbol :: LedgerValue.AssetClass -> LedgerApiV2.CurrencySymbol -> Bool -> LedgerApiV2.Value -> Integer -> PlutusContract.Contract w s DataText.Text LedgerApiV2.Value
 createValueAddingTokensOfCurrencySymbol ac cs acIsWithoutTokenName value cantidad = do
-
     if not acIsWithoutTokenName then do
         return $ LedgerValue.assetClassValue ac cantidad
     else do

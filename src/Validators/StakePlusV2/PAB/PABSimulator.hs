@@ -21,6 +21,7 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 -----------------------------------------------------------------------------------------
 module Validators.StakePlusV2.PAB.PABSimulator where
 -----------------------------------------------------------------------------------------
@@ -87,6 +88,7 @@ import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.FundAn
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund         as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool         as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool     as OnChainNFT
+import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Emergency         as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund        as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund      as OnChainNFT
 import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit   as OnChainNFT
@@ -98,7 +100,7 @@ import qualified Validators.StakePlusV2.OnChain.Tokens.TxID.UserActions.Withdraw
 import qualified Validators.StakePlusV2.PAB.PAB                                             as PAB
 import qualified Validators.StakePlusV2.PAB.PABSimulatorHelpers                             as PABSimulatorHelpers
 import qualified Validators.StakePlusV2.Types.Constants                                     as T 
-import qualified Validators.StakePlusV2.Types.PABParams                                     as T (PABBalanceAtScriptFullParams (..), PABBalanceAtScriptParams (..), PABSplitUtxOParams (..), PABUserDepositParams (..), PABPoolParams (..), PABUserHarvestParams (..), PABUserWithdrawParams (..), PABMasterMintFreeParams (..), PABMasterPreparePoolParams (..), PABMasterFundParams (..), PABMasterFundAndMergeParams (..), PABMasterSplitFundParams (..), PABMasterClosePoolParams (..), PABMasterTerminatePoolParams (..), PABMasterDeleteFundParams (..), PABMasterSendBackFundParams (..), PABMasterSendBackDepositParams (..), PABMasterAddScriptsParams (..) , PABMasterDeleteScriptsParams (..) )
+import qualified Validators.StakePlusV2.Types.PABParams                                     as T (PABBalanceAtScriptFullParams (..), PABBalanceAtScriptParams (..), PABSplitUtxOParams (..), PABUserDepositParams (..), PABPoolParams (..), PABUserHarvestParams (..), PABUserWithdrawParams (..), PABMasterMintFreeParams (..), PABMasterPreparePoolParams (..), PABMasterFundParams (..), PABMasterFundAndMergeParams (..), PABMasterSplitFundParams (..), PABMasterClosePoolParams (..), PABMasterTerminatePoolParams (..), PABMasterEmergencyParams (..), PABMasterDeleteFundParams (..), PABMasterSendBackFundParams (..), PABMasterSendBackDepositParams (..), PABMasterAddScriptsParams (..) , PABMasterDeleteScriptsParams (..) )
 import qualified Validators.StakePlusV2.Types.Types                                         as T (PoolParams (..),InterestRate (..))
 import qualified Utils
 --------------------------------------------------------------------------------
@@ -150,6 +152,7 @@ mainLoop (walletNro', walletCount) pabPoolParams' shutdown = do
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "36 - Close Pool"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "37 - Terminate Pool"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "38 - Delete Fund"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "39 - Emergency"
 
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "----"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "51 - Add Scripts"
@@ -173,13 +176,20 @@ mainLoop (walletNro', walletCount) pabPoolParams' shutdown = do
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "6 - Mint Tokens"
 
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "----"
-    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "7 - Split UtxO at Wllet"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "7 - Split UtxO at Wallet"
 
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "----"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "81 - All Balances"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "82 - UtxOs at Wallet"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "83 - UtxOs at Script"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "84 - UtxOs at Script Full"
+
+
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "----"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "90 - Evaluate Validator"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "91 - Evaluate Harvest"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "92 - Evaluate Withdraw"
+    PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "93 - Evaluate Emergency"
 
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "-----------"
     PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "99 - Exit"
@@ -210,6 +220,8 @@ mainLoop (walletNro', walletCount) pabPoolParams' shutdown = do
             masterTerminatePool (walletNro', walletCount) pabPoolParams' shutdown
         Just 38 ->
             masterDeleteFunds (walletNro', walletCount) pabPoolParams' shutdown
+        Just 39 ->
+            masterEmergency (walletNro', walletCount) pabPoolParams' shutdown
         Just 391 ->
             masterGetBackFund (walletNro', walletCount) pabPoolParams' shutdown
         Just 392 ->
@@ -241,10 +253,178 @@ mainLoop (walletNro', walletCount) pabPoolParams' shutdown = do
             uTxOAtScript (walletNro', walletCount) pabPoolParams' shutdown
         Just 84 ->
             uTxOAtScriptFull (walletNro', walletCount) pabPoolParams' shutdown
+        Just 90 ->
+            evaluate_Validator (walletNro', walletCount) pabPoolParams' shutdown
+        Just 91 ->
+            evaluate_User_Harvest (walletNro', walletCount) pabPoolParams' shutdown
+        Just 92 ->
+            evaluate_User_Withdraw (walletNro', walletCount) pabPoolParams' shutdown
+        Just 93 ->
+            evaluate_Master_Emergency (walletNro', walletCount) pabPoolParams' shutdown
         Just 99 -> do
             PABSimulatorHelpers.balances (walletNro', walletCount) pabPoolParams' shutdown
             shutdown
         _ -> mainLoop (walletNro', walletCount) pabPoolParams' shutdown
+
+-----------------------------------------------------------------------------------------
+
+evaluate_Validator :: (Maybe Integer, Integer) -> Maybe T.PABPoolParams -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) () -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) ()
+evaluate_Validator (walletNro', walletCount) pabPoolParams' shutdown = do
+    case (walletNro',  pabPoolParams') of
+        (Just walletNro, Just pabPoolParams) -> do
+            
+            PABSimulatorHelpers.evaluate_Validator pabPoolParams
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) ""
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) (Just pabPoolParams) shutdown
+
+        (_, Just pabPoolParams) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) (Just pabPoolParams) shutdown
+
+        (Just walletNro, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) Nothing shutdown
+
+        (_, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet and PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) Nothing shutdown
+
+-----------------------------------------------------------------------------------------
+
+evaluate_User_Harvest :: (Maybe Integer, Integer) -> Maybe T.PABPoolParams -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) () -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) ()
+evaluate_User_Harvest (walletNro', walletCount) pabPoolParams' shutdown = do
+    case (walletNro',  pabPoolParams') of
+        (Just walletNro, Just pabPoolParams) -> do
+            
+            PABSimulatorHelpers.evaluate_Policy_TxID_User_Harvest pabPoolParams
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) ""
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) (Just pabPoolParams) shutdown
+
+        (_, Just pabPoolParams) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) (Just pabPoolParams) shutdown
+
+        (Just walletNro, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) Nothing shutdown
+
+        (_, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet and PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) Nothing shutdown
+
+-----------------------------------------------------------------------------------------
+
+evaluate_User_Withdraw :: (Maybe Integer, Integer) -> Maybe T.PABPoolParams -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) () -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) ()
+evaluate_User_Withdraw (walletNro', walletCount) pabPoolParams' shutdown = do
+    case (walletNro',  pabPoolParams') of
+        (Just walletNro, Just pabPoolParams) -> do
+            
+            PABSimulatorHelpers.evaluate_Policy_TxID_User_Withdraw pabPoolParams
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) ""
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) (Just pabPoolParams) shutdown
+
+        (_, Just pabPoolParams) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) (Just pabPoolParams) shutdown
+
+        (Just walletNro, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) Nothing shutdown
+
+        (_, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet and PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) Nothing shutdown
+
+-----------------------------------------------------------------------------------------
+
+evaluate_Master_Emergency :: (Maybe Integer, Integer) -> Maybe T.PABPoolParams -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) () -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) ()
+evaluate_Master_Emergency (walletNro', walletCount) pabPoolParams' shutdown = do
+    case (walletNro',  pabPoolParams') of
+        (Just walletNro, Just pabPoolParams) -> do
+            
+            PABSimulatorHelpers.evaluate_Policy_TxID_Master_Emergency pabPoolParams
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) ""
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) (Just pabPoolParams) shutdown
+
+        (_, Just pabPoolParams) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) (Just pabPoolParams) shutdown
+
+        (Just walletNro, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) Nothing shutdown
+
+        (_, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet and PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) Nothing shutdown
 
 -----------------------------------------------------------------------------------------
 
@@ -270,7 +450,7 @@ elegirWallet (_, walletCount) pabPoolParams' shutdown = do
                     "----------------" ,
                     "#: " ++ P.show walletNro,
                     "Pk: " ++ P.show (PABSimulatorHelpers.walletPaymentPubKeyHash walletNro) 
-                ] | walletNro <-  [1..walletCount]
+                ] | walletNro <- [1..walletCount]
             ]
     mapM_ (PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts)) formatWallets
 
@@ -308,7 +488,7 @@ uTxOAtWallet (walletNro', walletCount) pabPoolParams' shutdown =
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "UtxOs at Wallet"
 
-            mapM_ (PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts)) ["Values at: " ++ P.show uTxO ++ " " ++  P.show (LedgerBlockchain.value blockchain uTxO) | uTxO <-  uTxOutRefAt ]
+            mapM_ (PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts)) ["Values at: " ++ P.show uTxO ++ " " ++  P.show (LedgerBlockchain.value blockchain uTxO) | uTxO <- uTxOutRefAt ]
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
             Monad.void $ MonadIOClass.liftIO P.getLine
@@ -382,7 +562,7 @@ uTxOAtScriptFull (walletNro', walletCount) pabPoolParams' shutdown =
 
                 formatValues uTxORef = [P.show val   |  val <- LedgerValue.flattenValue $ Helpers.fromJust $ LedgerBlockchain.value blockchain uTxORef ]
 
-                formatUTxOValues = concat [P.show ( 1 P.+  Helpers.fromJust(DataList.elemIndex (uTxORef, uTxOut) uTxOuts)): (    "At: " ++ P.show uTxORef):("Datum: " ++  datumFrom uTxOut):formatValues uTxORef | (uTxORef, uTxOut) <-  uTxOuts ]
+                formatUTxOValues = concat [P.show ( 1 P.+  Helpers.fromJust(DataList.elemIndex (uTxORef, uTxOut) uTxOuts)): (    "At: " ++ P.show uTxORef):("Datum: " ++  datumFrom uTxOut):formatValues uTxORef | (uTxORef, uTxOut) <- uTxOuts ]
 
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "UtxOs at Script"
@@ -469,9 +649,9 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
             -- let
             --     onlyLettersAndNumbers :: P.String -> P.String
             --     onlyLettersAndNumbers s = TextREReplace.replaceAll "" $ s TextRETDFAString.*=~ [TextRETDFAString.re|$([^a-zA-Z0-9])|]
-
             --     nombrePool = onlyLettersAndNumbers nombrePool'
 
+            MonadIOClass.liftIO $ SystemDirectory.removePathForcibly (basePathFiles SystemFilePathPosix.</> nombrePool )
             MonadIOClass.liftIO $ SystemDirectory.createDirectoryIfMissing True (basePathFiles SystemFilePathPosix.</> nombrePool )
 
             let
@@ -501,8 +681,8 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
             beginAtPool <- getTime beginAtPool' 0 
 
             slot' <- PABSimulator.currentSlot >>= MonadIOClass.liftIO . ConcurrentSTM.atomically
-            let deadlinePool'  = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def (slot'+300)
-            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "Enter Deadline in Milisecconds (def=" ++ P.show deadlinePool' ++ "):"
+            let deadlinePool'  = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def (slot'+900)
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "Enter Deadline in Milisecconds (def=" ++ P.show deadlinePool' ++ " / 15 min):"
             deadlinePool <- getTime deadlinePool' beginAtPool
 
             let graceTime'  = 1000 P.* 60 P.* 15 -- 15 minutes
@@ -614,7 +794,7 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
             let    
                 poolID_CS = curSymbol_PoolID
                 -- poolID_TN = T.poolID_TN
-                -- poolID_AC = LedgerValue.assetClass poolID_CS poolID_TN
+                -- poolID_AC = LedgerValue.AssetClass (poolID_CS, poolID_TN)
 
                 pParams = T.PoolParams
                     {
@@ -641,85 +821,91 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Fund' Minting Script..."
             let
                 !policy_TxID_Master_Fund = OnChainNFT.policy_TxID_Master_Fund pParams
-                !curSymbol_TxID_Master_Fund = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_Fund curSymbol_TxID_Master_Fund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
+                !txID_Master_Fund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_Fund
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_Fund txID_Master_Fund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Fund"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'User Deposit' Minting Script..."
             let
                 !policy_TxID_User_Deposit = OnChainNFT.policy_TxID_User_Deposit pParams
-                !curSymbol_TxID_User_Deposit = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Deposit curSymbol_TxID_User_Deposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
+                !txID_User_Deposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Deposit
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Deposit txID_User_Deposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Deposit"
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'User Harvest' Minting Script..."
+            let
+                !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams txID_Master_Fund_CS txID_User_Deposit_CS
+                !txID_User_Harvest_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Harvest txID_User_Harvest_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Fund And Merge' Minting Script..."
             let
-                !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams curSymbol_TxID_Master_Fund
-                !curSymbol_TxID_Master_FundAndMerge = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_FundAndMerge curSymbol_TxID_Master_FundAndMerge (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
+                !policy_TxID_Master_FundAndMerge = OnChainNFT.policy_TxID_Master_FundAndMerge pParams txID_Master_Fund_CS
+                !txID_Master_FundAndMerge_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_FundAndMerge
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_FundAndMerge txID_Master_FundAndMerge_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_FundAndMerge"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Split Fund' Minting Script..."
             let
-                !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams curSymbol_TxID_Master_Fund
-                !curSymbol_TxID_Master_SplitFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SplitFund curSymbol_TxID_Master_SplitFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
+                !policy_TxID_Master_SplitFund = OnChainNFT.policy_TxID_Master_SplitFund pParams txID_Master_Fund_CS
+                !txID_Master_SplitFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SplitFund
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SplitFund txID_Master_SplitFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SplitFund"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Close Pool' Minting Script..."
             let
                 !policy_TxID_Master_ClosePool = OnChainNFT.policy_TxID_Master_ClosePool pParams
-                !curSymbol_TxID_Master_ClosePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_ClosePool curSymbol_TxID_Master_ClosePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
+                !txID_Master_ClosePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_ClosePool
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_ClosePool txID_Master_ClosePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_ClosePool"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Terminate Pool' Minting Script..."
             let
                 !policy_TxID_Master_TerminatePool = OnChainNFT.policy_TxID_Master_TerminatePool pParams
-                !curSymbol_TxID_Master_TerminatePool = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_TerminatePool curSymbol_TxID_Master_TerminatePool (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
+                !txID_Master_TerminatePool_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_TerminatePool
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_TerminatePool txID_Master_TerminatePool_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_TerminatePool"
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Emergency' Minting Script..."
+            let
+                !policy_TxID_Master_Emergency = OnChainNFT.policy_TxID_Master_Emergency pParams
+                !txID_Master_Emergency_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_Emergency
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_Emergency txID_Master_Emergency_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_Emergency"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Delete Fund' Minting Script..."
             let
-                !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams curSymbol_TxID_Master_Fund
-                !curSymbol_TxID_Master_DeleteFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_DeleteFund curSymbol_TxID_Master_DeleteFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
+                !policy_TxID_Master_DeleteFund = OnChainNFT.policy_TxID_Master_DeleteFund pParams txID_Master_Fund_CS
+                !txID_Master_DeleteFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteFund
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_DeleteFund txID_Master_DeleteFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteFund"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Send Back Fund' Minting Script..."
             let
                 !policy_TxID_Master_SendBackFund = OnChainNFT.policy_TxID_Master_SendBackFund pParams
-                !curSymbol_TxID_Master_SendBackFund = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SendBackFund curSymbol_TxID_Master_SendBackFund (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
+                !txID_Master_SendBackFund_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackFund
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SendBackFund txID_Master_SendBackFund_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackFund"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Send Back Deposit' Minting Script..."
             let
-                !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-                !curSymbol_TxID_Master_SendBackDeposit = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SendBackDeposit curSymbol_TxID_Master_SendBackDeposit (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
+                !policy_TxID_Master_SendBackDeposit = OnChainNFT.policy_TxID_Master_SendBackDeposit pParams txID_Master_Fund_CS txID_User_Deposit_CS txID_User_Harvest_CS
+                !txID_Master_SendBackDeposit_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_SendBackDeposit
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_SendBackDeposit txID_Master_SendBackDeposit_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_SendBackDeposit"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Add Scripts' Minting Script..."
             let
                 !policy_TxID_Master_AddScripts = OnChainNFT.policy_TxID_Master_AddScripts pParams
-                !curSymbol_TxID_Master_AddScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_AddScripts curSymbol_TxID_Master_AddScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
+                !txID_Master_AddScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_AddScripts
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_AddScripts txID_Master_AddScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_AddScripts"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'Master Delete Scripts' Minting Script..."
             let
-                !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams curSymbol_TxID_Master_AddScripts
-                !curSymbol_TxID_Master_DeleteScripts = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_DeleteScripts curSymbol_TxID_Master_DeleteScripts (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
-
-            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'User Harvest' Minting Script..."
-            let
-                !policy_TxID_User_Harvest = OnChainNFT.policy_TxID_User_Harvest pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-                !curSymbol_TxID_User_Harvest = Utils.getCurSymbolOfPolicy policy_TxID_User_Harvest
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Harvest curSymbol_TxID_User_Harvest (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_User_Harvest"
+                !policy_TxID_Master_DeleteScripts = OnChainNFT.policy_TxID_Master_DeleteScripts pParams txID_Master_AddScripts_CS
+                !txID_Master_DeleteScripts_CS = Utils.getCurSymbolOfPolicy policy_TxID_Master_DeleteScripts
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_Master_DeleteScripts txID_Master_DeleteScripts_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Master_DeleteScripts"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating 'User Withdraw' Minting Script..."
             let
-                !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams curSymbol_TxID_Master_Fund curSymbol_TxID_User_Deposit
-                !curSymbol_TxID_User_Withdraw = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
-            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Withdraw curSymbol_TxID_User_Withdraw (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_User_Withdraw"
+                !policy_TxID_User_Withdraw = OnChainNFT.policy_TxID_User_Withdraw pParams txID_Master_Fund_CS txID_User_Deposit_CS txID_User_Harvest_CS
+                !txID_User_Withdraw_CS = Utils.getCurSymbolOfPolicy policy_TxID_User_Withdraw
+            _ <- MonadIOClass.liftIO $ Deploy.writeMintingPolicy policy_TxID_User_Withdraw txID_User_Withdraw_CS (basePathFiles SystemFilePathPosix.</> nombrePool) "Mint_TxID_Mint_User_Withdraw"
 
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Generating Main Validator Script..."
 
             let
-                validator = OnChain.codeValidator pParams curSymbol_TxID_Master_Fund curSymbol_TxID_Master_FundAndMerge curSymbol_TxID_Master_SplitFund curSymbol_TxID_Master_ClosePool curSymbol_TxID_Master_TerminatePool curSymbol_TxID_Master_DeleteFund curSymbol_TxID_Master_SendBackFund curSymbol_TxID_Master_SendBackDeposit curSymbol_TxID_Master_AddScripts curSymbol_TxID_Master_DeleteScripts curSymbol_TxID_User_Deposit curSymbol_TxID_User_Harvest  curSymbol_TxID_User_Withdraw
+                validator = OnChain.codeValidator pParams txID_Master_Fund_CS txID_Master_FundAndMerge_CS txID_Master_SplitFund_CS txID_Master_ClosePool_CS txID_Master_TerminatePool_CS txID_Master_Emergency_CS txID_Master_DeleteFund_CS txID_Master_SendBackFund_CS txID_Master_SendBackDeposit_CS txID_Master_AddScripts_CS txID_Master_DeleteScripts_CS txID_User_Deposit_CS txID_User_Harvest_CS  txID_User_Withdraw_CS
                 hash = Utils.hashValidator validator
                 address = Utils.addressValidator hash
             _ <- MonadIOClass.liftIO $ Deploy.writeValidator validator (basePathFiles SystemFilePathPosix.</> nombrePool) "Validator"
@@ -749,6 +935,7 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
                         T.pppPolicy_TxID_Master_SplitFund  = policy_TxID_Master_SplitFund,
                         T.pppPolicy_TxID_Master_ClosePool  = policy_TxID_Master_ClosePool,
                         T.pppPolicy_TxID_Master_TerminatePool  = policy_TxID_Master_TerminatePool,
+                        T.pppPolicy_TxID_Master_Emergency  = policy_TxID_Master_Emergency,
                         T.pppPolicy_TxID_Master_DeleteFund  = policy_TxID_Master_DeleteFund,
                         T.pppPolicy_TxID_Master_SendBackFund  = policy_TxID_Master_SendBackFund,
                         T.pppPolicy_TxID_Master_SendBackDeposit  = policy_TxID_Master_SendBackDeposit,
@@ -759,20 +946,21 @@ createPoolParams (walletNro', walletCount) pabPoolParams' shutdown =
                         T.pppPolicy_TxID_User_Harvest  = policy_TxID_User_Harvest,
                         T.pppPolicy_TxID_User_Withdraw  = policy_TxID_User_Withdraw,
 
-                        T.pppCurSymbol_TxID_Master_Fund = curSymbol_TxID_Master_Fund,
-                        T.pppCurSymbol_TxID_Master_FundAndMerge = curSymbol_TxID_Master_FundAndMerge,
-                        T.pppCurSymbol_TxID_Master_SplitFund = curSymbol_TxID_Master_SplitFund,
-                        T.pppCurSymbol_TxID_Master_ClosePool = curSymbol_TxID_Master_ClosePool,
-                        T.pppCurSymbol_TxID_Master_TerminatePool = curSymbol_TxID_Master_TerminatePool,
-                        T.pppCurSymbol_TxID_Master_DeleteFund = curSymbol_TxID_Master_DeleteFund,
-                        T.pppCurSymbol_TxID_Master_SendBackFund = curSymbol_TxID_Master_SendBackFund,
-                        T.pppCurSymbol_TxID_Master_SendBackDeposit = curSymbol_TxID_Master_SendBackDeposit,
-                        T.pppCurSymbol_TxID_Master_AddScripts = curSymbol_TxID_Master_AddScripts,
-                        T.pppCurSymbol_TxID_Master_DeleteScripts = curSymbol_TxID_Master_DeleteScripts,
+                        T.pppCurSymbol_TxID_Master_Fund = txID_Master_Fund_CS,
+                        T.pppCurSymbol_TxID_Master_FundAndMerge = txID_Master_FundAndMerge_CS,
+                        T.pppCurSymbol_TxID_Master_SplitFund = txID_Master_SplitFund_CS,
+                        T.pppCurSymbol_TxID_Master_ClosePool = txID_Master_ClosePool_CS,
+                        T.pppCurSymbol_TxID_Master_TerminatePool = txID_Master_TerminatePool_CS,
+                        T.pppCurSymbol_TxID_Master_Emergency = txID_Master_Emergency_CS,
+                        T.pppCurSymbol_TxID_Master_DeleteFund = txID_Master_DeleteFund_CS,
+                        T.pppCurSymbol_TxID_Master_SendBackFund = txID_Master_SendBackFund_CS,
+                        T.pppCurSymbol_TxID_Master_SendBackDeposit = txID_Master_SendBackDeposit_CS,
+                        T.pppCurSymbol_TxID_Master_AddScripts = txID_Master_AddScripts_CS,
+                        T.pppCurSymbol_TxID_Master_DeleteScripts = txID_Master_DeleteScripts_CS,
 
-                        T.pppCurSymbol_TxID_User_Deposit = curSymbol_TxID_User_Deposit,
-                        T.pppCurSymbol_TxID_User_Harvest = curSymbol_TxID_User_Harvest,
-                        T.pppCurSymbol_TxID_User_Withdraw = curSymbol_TxID_User_Withdraw
+                        T.pppCurSymbol_TxID_User_Deposit = txID_User_Deposit_CS,
+                        T.pppCurSymbol_TxID_User_Harvest = txID_User_Harvest_CS,
+                        T.pppCurSymbol_TxID_User_Withdraw = txID_User_Withdraw_CS
                     }
 
             MonadIOClass.liftIO $ Utils.writeEncodedToFile (basePathFiles SystemFilePathPosix.</> nombrePool SystemFilePathPosix.</> "PABPoolParams-HEX.json") pabPoolParams
@@ -846,8 +1034,6 @@ mintTokens (walletNro', walletCount) pabPoolParams' shutdown =
 
         Just walletNro -> do
 
-            
-
             PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "Enter policy number: "
             policyNum <- PABSimulatorHelpers.getInt
 
@@ -883,7 +1069,7 @@ mintTokens (walletNro', walletCount) pabPoolParams' shutdown =
                                 T.pmmfMintAmount = mintAmount
                             }
 
-            cMasterMintFree_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) pABMasterMintFreeParams
+            cMasterMintFree_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) pABMasterMintFreeParams
 
             _ <- PABSimulator.waitUntilFinished cMasterMintFree_Master
 
@@ -923,7 +1109,7 @@ masterPreparePool (walletNro', walletCount) pabPoolParams' shutdown =
                         T.pmcpPoolID_TxOutRef = poolID_TxOutRef
                     }
 
-            cmasterPreparePool_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) pABMasterPreparePoolParams
+            cmasterPreparePool_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) pABMasterPreparePoolParams
 
             _ <- PABSimulator.waitUntilFinished cmasterPreparePool_Master
 
@@ -978,7 +1164,7 @@ masterNewFund (walletNro', walletCount) pabPoolParams' shutdown =
 
             fundAmount <- PABSimulatorHelpers.getAmount harvest_UI harvest_AC 0
 
-            cMasterFund_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFund T.PABMasterFundParams{
+            cMasterFund_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFund T.PABMasterFundParams{
                     T.pmfpPABPoolParams = pabPoolParams,
                     T.pmfpFundAmount   = fundAmount
                 })
@@ -1036,8 +1222,7 @@ masterFundAndMerge (walletNro', walletCount) pabPoolParams' shutdown =
                 !uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabPoolParams
-                !fundID_TN = T.fundID_TN
-                !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+                !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
 
             selectedUTxOs <- PABSimulatorHelpers.selectUTxOs fundID_AC [] uTxOuts blockchain
 
@@ -1050,13 +1235,13 @@ masterFundAndMerge (walletNro', walletCount) pabPoolParams' shutdown =
 
             fundAmount <- PABSimulatorHelpers.getAmount harvest_UI harvest_AC 0
 
-            cMasterFundAndMerge_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFundAndMerge T.PABMasterFundAndMergeParams{
+            cMasterFundAndMerge_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFundAndMerge T.PABMasterFundAndMergeParams{
                     T.pmfampPABPoolParams = pabPoolParams,
                     T.pmfampFundIDs_TxOutRefs = selectedUTxOsRef,
                     T.pmfampFundAmount   = fundAmount
                 })
 
-            _ <-  PABSimulator.waitUntilFinished cMasterFundAndMerge_Master
+            _ <- PABSimulator.waitUntilFinished cMasterFundAndMerge_Master
 
             slot <- PABSimulator.currentSlot >>= MonadIOClass.liftIO . ConcurrentSTM.atomically
             let posixTime = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def slot
@@ -1111,8 +1296,7 @@ masterMergeFunds (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabPoolParams
-                !fundID_TN = T.fundID_TN
-                !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+                !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
 
             selectedUTxOs <- PABSimulatorHelpers.selectUTxOs fundID_AC [] uTxOuts blockchain
 
@@ -1122,13 +1306,13 @@ masterMergeFunds (walletNro', walletCount) pabPoolParams' shutdown =
             let 
                 fundAmount = 0
 
-            cMasterFundAndMerge_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFundAndMerge T.PABMasterFundAndMergeParams{
+            cMasterFundAndMerge_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterFundAndMerge T.PABMasterFundAndMergeParams{
                     T.pmfampPABPoolParams = pabPoolParams,
                     T.pmfampFundIDs_TxOutRefs = selectedUTxOsRef,
                     T.pmfampFundAmount   = fundAmount
                 })
 
-            _ <-  PABSimulator.waitUntilFinished cMasterFundAndMerge_Master
+            _ <- PABSimulator.waitUntilFinished cMasterFundAndMerge_Master
 
             slot <- PABSimulator.currentSlot >>= MonadIOClass.liftIO . ConcurrentSTM.atomically
             let posixTime = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def slot
@@ -1183,8 +1367,7 @@ masterSplitFund (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabPoolParams
-                !fundID_TN = T.fundID_TN
-                !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+                !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
 
             selectedUTxO' <- PABSimulatorHelpers.selectUTxO fundID_AC uTxOuts blockchain
 
@@ -1203,7 +1386,7 @@ masterSplitFund (walletNro', walletCount) pabPoolParams' shutdown =
 
                     !splitAmount <- PABSimulatorHelpers.getAmount harvest_UI harvest_AC 0
 
-                    !cMasterSplitFund_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSplitFund T.PABMasterSplitFundParams{
+                    !cMasterSplitFund_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSplitFund T.PABMasterSplitFundParams{
                             T.pmsPABPoolParams = pabPoolParams,
                             T.pmsFundID_TxOutRef  = selectedUTxORef,
                             T.pmsSplitFundAmount   = splitAmount
@@ -1254,7 +1437,7 @@ masterClosePool (walletNro', walletCount) pabPoolParams' shutdown =
     case (walletNro',  pabPoolParams') of
         (Just walletNro, Just pabPoolParams) -> do
 
-            cMasterClosePool_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterClosePool T.PABMasterClosePoolParams{
+            cMasterClosePool_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterClosePool T.PABMasterClosePoolParams{
                     T.pmcPABPoolParams = pabPoolParams
                 })
 
@@ -1303,11 +1486,60 @@ masterTerminatePool (walletNro', walletCount) pabPoolParams' shutdown =
     case (walletNro',  pabPoolParams') of
         (Just walletNro, Just pabPoolParams) -> do
 
-            cMasterTerminatePool_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterTerminatePool T.PABMasterTerminatePoolParams{
+            cMasterTerminatePool_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterTerminatePool T.PABMasterTerminatePoolParams{
                     T.pmtPABPoolParams = pabPoolParams
                 })
 
             _ <- PABSimulator.waitUntilFinished cMasterTerminatePool_Master
+
+            slot <- PABSimulator.currentSlot >>= MonadIOClass.liftIO . ConcurrentSTM.atomically
+            let posixTime = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def slot
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) ""
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "slot: " ++  P.show slot
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "time: " ++  P.show posixTime
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) $ "format time: " ++  PABSimulatorHelpers.getFormatTime posixTime
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+            mainLoop (Just walletNro, walletCount) (Just pabPoolParams) shutdown
+
+        (_, Just pabPoolParams) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) (Just pabPoolParams) shutdown
+
+        (Just walletNro, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Just walletNro, walletCount) Nothing shutdown
+
+        (_, _) -> do
+
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Choose Wallet and PAB Pool Params"
+            PABSimulator.logString @(PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) "Press return to continue..."
+            Monad.void $ MonadIOClass.liftIO P.getLine
+
+            mainLoop (Nothing, walletCount) Nothing shutdown
+
+--------------------------------------------------------------------------------
+
+masterEmergency :: (Maybe Integer, Integer) -> Maybe T.PABPoolParams -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) () -> MonadFreerInternal.Eff (PABCore.PABEffects (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts) (PABSimulator.SimulatorState (PABEffectsContractBuiltin.Builtin PAB.ValidatorContracts))) ()
+masterEmergency (walletNro', walletCount) pabPoolParams' shutdown =
+    case (walletNro',  pabPoolParams') of
+        (Just walletNro, Just pabPoolParams) -> do
+
+            cMasterEmergency_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterEmergency T.PABMasterEmergencyParams{
+                    T.pmePABPoolParams = pabPoolParams
+                })
+
+            _ <- PABSimulator.waitUntilFinished cMasterEmergency_Master
 
             slot <- PABSimulator.currentSlot >>= MonadIOClass.liftIO . ConcurrentSTM.atomically
             let posixTime = LedgerTimeSlot.slotToEndPOSIXTime DataDefault.def slot
@@ -1360,15 +1592,14 @@ masterDeleteFunds (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !fundID_CS = T.pppCurSymbol_TxID_Master_Fund pabPoolParams
-                !fundID_TN = T.fundID_TN
-                !fundID_AC = LedgerValue.assetClass fundID_CS fundID_TN
+                !fundID_AC = LedgerValue.AssetClass (fundID_CS, T.fundID_TN)
 
             selectedUTxOs <- PABSimulatorHelpers.selectUTxOs fundID_AC [] uTxOuts blockchain
 
             let
                 selectedUTxOsRef = snd <$> selectedUTxOs
 
-            cMasterDeleteFund_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterDeleteFund T.PABMasterDeleteFundParams{
+            cMasterDeleteFund_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterDeleteFund T.PABMasterDeleteFundParams{
                     T.pmdPABPoolParams = pabPoolParams,
                     T.pmdFundIDs_TxOutRefs = selectedUTxOsRef
                 })
@@ -1421,7 +1652,7 @@ masterGetBackFund (walletNro', walletCount) pabPoolParams' shutdown =
             let
                 master = PABSimulatorHelpers.walletPaymentPubKeyHash walletNro
 
-            cMasterSendBackFund_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackFund T.PABMasterSendBackFundParams{
+            cMasterSendBackFund_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackFund T.PABMasterSendBackFundParams{
                     T.pmsbfPABPoolParams = pabPoolParams,
                     T.pmsbfMasterToSendBack = Ledger.unPaymentPubKeyHash master
                 })
@@ -1475,7 +1706,7 @@ masterSendBackFund (walletNro', walletCount) pabPoolParams' shutdown =
             let
                 master = PABSimulatorHelpers.walletPaymentPubKeyHash masterWalletNro
 
-            cMasterSendBackFund_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackFund T.PABMasterSendBackFundParams{
+            cMasterSendBackFund_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackFund T.PABMasterSendBackFundParams{
                     T.pmsbfPABPoolParams = pabPoolParams,
                     T.pmsbfMasterToSendBack = Ledger.unPaymentPubKeyHash master
                 })
@@ -1533,8 +1764,7 @@ masterSendBackDeposit (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !userID_CS = T.pppCurSymbol_TxID_User_Deposit pabPoolParams
-                !userID_TN = T.userID_TN
-                !userID_AC = LedgerValue.assetClass userID_CS userID_TN
+                !userID_AC = LedgerValue.AssetClass (userID_CS, T.userID_TN) 
 
             selectedUTxO' <- PABSimulatorHelpers.selectUTxO userID_AC uTxOuts blockchain
 
@@ -1547,7 +1777,7 @@ masterSendBackDeposit (walletNro', walletCount) pabPoolParams' shutdown =
                     let
                         selectedUTxORef = snd selectedUTxO
 
-                    cMasterSendBackDeposit_Master  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackDeposit T.PABMasterSendBackDepositParams{
+                    cMasterSendBackDeposit_Master <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterSendBackDeposit T.PABMasterSendBackDepositParams{
                             T.pmsbiPABPoolParams = pabPoolParams,
                             T.pmsbiUserID_TxOutRef = selectedUTxORef
                         })
@@ -1609,7 +1839,7 @@ userDeposit (walletNro', walletCount) pabPoolParams' shutdown =
                         T.puiInvestAmount   = investAmount
                     }
 
-            !cUserDeposit_User  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserDeposit pABuserDepositParams )
+            !cUserDeposit_User <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserDeposit pABuserDepositParams )
 
             _ <- PABSimulator.waitUntilFinished cUserDeposit_User
 
@@ -1665,8 +1895,7 @@ userHarvest (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !userID_CS = T.pppCurSymbol_TxID_User_Deposit pabPoolParams
-                !userID_TN = T.userID_TN
-                !userID_AC = LedgerValue.assetClass userID_CS userID_TN
+                !userID_AC = LedgerValue.AssetClass (userID_CS, T.userID_TN) 
 
             selectedUTxO' <- PABSimulatorHelpers.selectUTxO userID_AC uTxOuts blockchain
 
@@ -1692,7 +1921,7 @@ userHarvest (walletNro', walletCount) pabPoolParams' shutdown =
                                 T.pugrClaimAmount  = claimAmount
                             }
 
-                    !cUserHarvest_User  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserHarvest userHarvestParams )
+                    !cUserHarvest_User <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserHarvest userHarvestParams )
 
                     _ <- PABSimulator.waitUntilFinished cUserHarvest_User
 
@@ -1748,8 +1977,7 @@ userWithdraw (walletNro', walletCount) pabPoolParams' shutdown =
                 uTxOuts = PABSimulatorHelpers.getUTxOsListInPABSimulator blockchain address
 
                 !userID_CS = T.pppCurSymbol_TxID_User_Deposit pabPoolParams
-                !userID_TN = T.userID_TN
-                !userID_AC = LedgerValue.assetClass userID_CS userID_TN
+                !userID_AC = LedgerValue.AssetClass (userID_CS, T.userID_TN) 
 
             selectedUTxO' <- PABSimulatorHelpers.selectUTxO userID_AC uTxOuts blockchain
 
@@ -1767,7 +1995,7 @@ userWithdraw (walletNro', walletCount) pabPoolParams' shutdown =
                                 T.pugbiUserID_TxOutRef = selectedUTxORef
                             }
 
-                    cUserWithdraw_User  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserWithdraw userWithdrawParams )
+                    cUserWithdraw_User <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.UserWithdraw userWithdrawParams )
 
                     _ <- PABSimulator.waitUntilFinished cUserWithdraw_User
 
@@ -1820,7 +2048,7 @@ masterAddScripts (walletNro', walletCount) pabPoolParams' shutdown =
                         T.pmasPABPoolParams = pabPoolParams
                     }
 
-            cMasterAddScripts_User  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterAddScripts masterAddScriptsParams )
+            cMasterAddScripts_User <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterAddScripts masterAddScriptsParams )
 
             _ <- PABSimulator.waitUntilFinished cMasterAddScripts_User
 
@@ -1873,7 +2101,7 @@ masterDeleteScripts (walletNro', walletCount) pabPoolParams' shutdown =
                         T.pmdsPABPoolParams = pabPoolParams
                     }
 
-            cMasterDeleteScripts_User  <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterDeleteScripts masterDeleteScriptsParams )
+            cMasterDeleteScripts_User <- PABSimulator.activateContract (PABSimulatorHelpers.getWallet walletNro) (PAB.MasterDeleteScripts masterDeleteScriptsParams )
 
             _ <- PABSimulator.waitUntilFinished cMasterDeleteScripts_User
 

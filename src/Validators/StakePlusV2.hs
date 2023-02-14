@@ -18,6 +18,7 @@ module Validators.StakePlusV2
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund,
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool,
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool,
+        module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Emergency,
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund,
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund,
         module Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit,
@@ -58,6 +59,7 @@ import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.FundAndMerge
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SplitFund
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.ClosePool
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.TerminatePool
+import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.Emergency
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.DeleteFund
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackFund
 import Validators.StakePlusV2.OnChain.Tokens.TxID.MasterActions.SendBackDeposit

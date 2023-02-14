@@ -21,14 +21,16 @@
 
 {- HLINT ignore "Use camelCase" -}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
+
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.Helpers where
 ------------------------------------------------------------------------------------------
 -- Import Externos
 ------------------------------------------------------------------------------------------
-import qualified Ledger.Ada                                        as LedgerAda               
+import qualified Ledger.Ada                                        as LedgerAda
 import qualified Ledger.Value                                      as LedgerValue
-import           PlutusTx.Prelude                                  ( otherwise, Bool(..), Integer, Maybe(..), Ordering(GT, LT), BuiltinByteString, Eq(..), Ord((>), (<=), (>=), (<)), AdditiveGroup((-)), AdditiveSemigroup((+)), Semigroup((<>)), (||), consByteString, emptyByteString, lengthOfByteString, (/=), traceError, ($), find, foldl, length, sum, head, sortBy, tail, negate, divide, quotient, remainder, MultiplicativeSemigroup((*)), not, all )
+import           PlutusTx.Prelude                                  ( otherwise, Bool(..), Integer, Maybe(..), Ordering(GT, LT), BuiltinByteString, Eq(..), Ord((>), (<=), (>=), (<), compare), AdditiveGroup((-)), AdditiveSemigroup((+)), Semigroup((<>)), (||), consByteString, emptyByteString, lengthOfByteString, (/=), traceError, ($), find, foldl, length, sum, head, sortBy, tail, negate, divide, quotient, remainder, MultiplicativeSemigroup((*)), not, all, zip, (++), (&&))
 import qualified PlutusTx.AssocMap                                 as TxAssocMap
 import qualified PlutusTx.Foldable                                 as TxFold
 import qualified PlutusTx.Ratio                                    as TxRatio
@@ -46,8 +48,22 @@ import qualified Validators.StakePlusV2.Types.Types                as T (Master,
 {- | Function to return the Just value from a Maybe. -}
 {-# INLINABLE fromJust #-}
 fromJust :: Maybe a -> a
-fromJust (Just valueInfo)   = valueInfo
-fromJust Nothing            = traceError "JN"
+fromJust (Just !valueInfo)   = valueInfo
+fromJust Nothing             = traceError "JN"
+
+{-# INLINABLE enumerate #-}
+enumerate :: [b] -> [(Integer, b)]
+enumerate !x =
+    let
+        !len = length x
+
+        createList :: Integer -> Integer -> [Integer] -> [Integer]
+        createList !n !i !list
+            | n == 0  = list
+            | otherwise = createList (n-1) (i+1) (list ++ [i] )
+
+    in
+        zip (createList len 0 []) x
 
 --------------------------------------------------------------------------------------
 
@@ -55,7 +71,7 @@ fromJust Nothing            = traceError "JN"
 --check if an element is in a list
 isElement :: Eq a => a -> [a] -> Bool
 isElement _ [] = False
-isElement x (y:ys) = x == y || isElement x ys
+isElement !x (y:ys) = x == y || isElement x ys
 
 --------------------------------------------------------------------------------------
 
@@ -81,7 +97,7 @@ datumIs_UserDatum _               = False
 {-# INLINABLE datumIs_ScriptDatum #-}
 datumIs_ScriptDatum :: T.DatumValidator -> Bool
 datumIs_ScriptDatum (T.ScriptDatum _) = True
-datumIs_ScriptDatum _               = False
+datumIs_ScriptDatum _                = False
 
 --------------------------------------------------------------------------------------
 
@@ -113,7 +129,7 @@ datumMaybeIs_ScriptDatum _                      = False
 {- | Try to get the PoolDatum from a generic Maybe Datum. -}
 {-# INLINABLE getPoolDatumTypo_FromMaybeDatum #-}
 getPoolDatumTypo_FromMaybeDatum :: Maybe T.DatumValidator -> T.PoolDatumTypo
-getPoolDatumTypo_FromMaybeDatum datum =
+getPoolDatumTypo_FromMaybeDatum !datum =
     case datum of
         Just (T.PoolDatum poolDatum) -> poolDatum
         _                            -> traceError "GD"
@@ -121,7 +137,7 @@ getPoolDatumTypo_FromMaybeDatum datum =
 {- | Get Just PoolDatum from a Datum. -}
 {-# INLINABLE getPoolDatumTypo_FromDatum #-}
 getPoolDatumTypo_FromDatum :: T.DatumValidator -> T.PoolDatumTypo
-getPoolDatumTypo_FromDatum datum =
+getPoolDatumTypo_FromDatum !datum =
     case datum of
         (T.PoolDatum poolDatum) -> poolDatum
         _                       -> traceError "GD"
@@ -131,7 +147,7 @@ getPoolDatumTypo_FromDatum datum =
 {- |  Try to get the FundDatum from a generic Maybe Datum. -}
 {-# INLINABLE getFundDatumTypo_FromMaybeDatum #-}
 getFundDatumTypo_FromMaybeDatum :: Maybe T.DatumValidator -> T.FundDatumTypo
-getFundDatumTypo_FromMaybeDatum datum =
+getFundDatumTypo_FromMaybeDatum !datum =
     case datum of
         Just (T.FundDatum fundDatum) -> fundDatum
         _                            -> traceError "GD"
@@ -139,7 +155,7 @@ getFundDatumTypo_FromMaybeDatum datum =
 {- | Get Just FundDatum from a Datum. -}
 {-# INLINABLE getFundDatumTypo_FromDatum #-}
 getFundDatumTypo_FromDatum :: T.DatumValidator -> T.FundDatumTypo
-getFundDatumTypo_FromDatum datum =
+getFundDatumTypo_FromDatum !datum =
     case datum of
         (T.FundDatum fundDatum) -> fundDatum
         _                       -> traceError "GD"
@@ -149,7 +165,7 @@ getFundDatumTypo_FromDatum datum =
 {- |  Try to get the UserDatum from a generic Maybe Datum. -}
 {-# INLINABLE getUserDatumTypo_FromMaybeDatum #-}
 getUserDatumTypo_FromMaybeDatum :: Maybe T.DatumValidator -> T.UserDatumTypo
-getUserDatumTypo_FromMaybeDatum datum =
+getUserDatumTypo_FromMaybeDatum !datum =
     case datum of
         Just (T.UserDatum userDatum) -> userDatum
         _                            -> traceError "GD"
@@ -157,7 +173,7 @@ getUserDatumTypo_FromMaybeDatum datum =
 {- | Get Just UserDatum from a Datum. -}
 {-# INLINABLE getUserDatumTypo_FromDatum #-}
 getUserDatumTypo_FromDatum :: T.DatumValidator -> T.UserDatumTypo
-getUserDatumTypo_FromDatum datum =
+getUserDatumTypo_FromDatum !datum =
     case datum of
         (T.UserDatum userDatum) -> userDatum
         _                       -> traceError "GD"
@@ -166,7 +182,7 @@ getUserDatumTypo_FromDatum datum =
 
 {-# INLINABLE getScriptDatumTypo_FromMaybeDatum #-}
 getScriptDatumTypo_FromMaybeDatum :: Maybe T.DatumValidator -> T.ScriptDatumTypo
-getScriptDatumTypo_FromMaybeDatum datum =
+getScriptDatumTypo_FromMaybeDatum !datum =
     case datum of
         Just (T.ScriptDatum scriptDatum)    -> scriptDatum
         _                                   -> traceError "GD"
@@ -174,7 +190,7 @@ getScriptDatumTypo_FromMaybeDatum datum =
 {- | Get Just ScriptDatum from a Datum. -}
 {-# INLINABLE getScriptDatumTypo_FromDatum #-}
 getScriptDatumTypo_FromDatum :: T.DatumValidator -> T.ScriptDatumTypo
-getScriptDatumTypo_FromDatum datum =
+getScriptDatumTypo_FromDatum !datum =
     case datum of
         (T.ScriptDatum scriptDatum) -> scriptDatum
         _                           -> traceError "GD"
@@ -182,125 +198,132 @@ getScriptDatumTypo_FromDatum datum =
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_NewFund #-}
-mkUpdated_PoolDatum_With_NewFund :: T.PoolDatumTypo -> T.Master -> Integer -> Integer -> T.DatumValidator
-mkUpdated_PoolDatum_With_NewFund poolDatum master fund minAda =
+mkUpdated_PoolDatum_With_NewFund :: T.PoolDatumTypo -> T.Master -> Integer -> Integer -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_NewFund !poolDatum !master !fund !minAda =
     let
         !masterFundersAll = T.pdMasterFunders poolDatum
         !masterFunder_others = [ masterFunder | masterFunder <- masterFundersAll,  T.mfMaster masterFunder /= master]
         !masterFunderOld = find (\masterFunder -> T.mfMaster masterFunder == master) masterFundersAll
         !masterFundersNew =
             (case masterFunderOld :: Maybe T.MasterFunder of
-                Just mf ->
+                Just !mf ->
                     T.mkMasterFunder master (T.mfFundAmount mf + fund) T.poolDatum_NotClaimedFund (T.mfMinAda mf + minAda)
                 _ -> T.mkMasterFunder master fund T.poolDatum_NotClaimedFund minAda
                 :masterFunder_others)
     in
-        T.mkPoolDatum masterFundersNew (T.pdFundCount poolDatum + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+        T.mkPoolDatumTypo masterFundersNew (T.pdFundCount poolDatum + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_NewFundAmountAndMerging #-}
-mkUpdated_PoolDatum_With_NewFundAmountAndMerging :: T.PoolDatumTypo -> T.Master -> Integer -> Integer -> T.DatumValidator
-mkUpdated_PoolDatum_With_NewFundAmountAndMerging poolDatum master fundAmount mergingCount =
+mkUpdated_PoolDatum_With_NewFundAmountAndMerging :: T.PoolDatumTypo -> T.Master -> Integer -> Integer -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_NewFundAmountAndMerging !poolDatum !master !fundAmount !mergingCount =
     let
         !masterFundersAll = T.pdMasterFunders poolDatum
         !masterFunder_others = [ masterFunder | masterFunder <- masterFundersAll,  T.mfMaster masterFunder /= master]
         !masterFunderOld = find (\masterFunder -> T.mfMaster masterFunder == master) masterFundersAll
         !masterFundersNew =
             (case masterFunderOld :: Maybe T.MasterFunder of
-                Just mf ->
+                Just !mf ->
                     T.mkMasterFunder master (T.mfFundAmount mf + fundAmount) T.poolDatum_NotClaimedFund (T.mfMinAda mf)
                 _ -> T.mkMasterFunder master fundAmount T.poolDatum_NotClaimedFund 0
                 :masterFunder_others)
     in
-        T.mkPoolDatum masterFundersNew (T.pdFundCount poolDatum - mergingCount + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+        T.mkPoolDatumTypo masterFundersNew (T.pdFundCount poolDatum - mergingCount + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_SplitFundAmount #-}
-mkUpdated_PoolDatum_With_SplitFundAmount :: T.PoolDatumTypo -> T.Master -> Integer -> T.DatumValidator
-mkUpdated_PoolDatum_With_SplitFundAmount poolDatum master minAda =
+mkUpdated_PoolDatum_With_SplitFundAmount :: T.PoolDatumTypo -> T.Master -> Integer -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_SplitFundAmount !poolDatum !master !minAda =
     let
         !masterFundersAll = T.pdMasterFunders poolDatum
         !masterFunder_others = [ masterFunder | masterFunder <- masterFundersAll,  T.mfMaster masterFunder /= master]
         !masterFunderOld = find (\masterFunder -> T.mfMaster masterFunder == master) masterFundersAll
         !masterFundersNew =
             (case masterFunderOld :: Maybe T.MasterFunder of
-                Just mf ->
+                Just !mf ->
                     T.mkMasterFunder master (T.mfFundAmount mf) T.poolDatum_NotClaimedFund (T.mfMinAda mf + minAda)
                 _ -> T.mkMasterFunder master 0 T.poolDatum_NotClaimedFund minAda
                 :masterFunder_others)
     in
-        T.mkPoolDatum masterFundersNew (T.pdFundCount poolDatum + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+        T.mkPoolDatumTypo masterFundersNew (T.pdFundCount poolDatum + 1) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_ClosedAt #-}
-mkUpdated_PoolDatum_With_ClosedAt :: T.PoolDatumTypo -> LedgerApiV2.POSIXTime -> T.DatumValidator
-mkUpdated_PoolDatum_With_ClosedAt poolDatum closedAt =
-    T.mkPoolDatum (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum ) (T.pdTotalCashedOut poolDatum) (Just closedAt) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+mkUpdated_PoolDatum_With_ClosedAt :: T.PoolDatumTypo -> LedgerApiV2.POSIXTime -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_ClosedAt !poolDatum !closedAt =
+    T.mkPoolDatumTypo (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum ) (T.pdTotalCashedOut poolDatum) (Just closedAt) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_Terminated #-}
-mkUpdated_PoolDatum_With_Terminated :: T.PoolDatumTypo -> T.DatumValidator
-mkUpdated_PoolDatum_With_Terminated poolDatum =
-    let 
+mkUpdated_PoolDatum_With_Terminated :: T.PoolDatumTypo -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_Terminated !poolDatum =
+    let
         !isTerminated = T.poolDatum_Terminated
     in
-        T.mkPoolDatum (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum ) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) isTerminated (T.pdMinAda poolDatum)
+        T.mkPoolDatumTypo (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum ) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) isTerminated (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
+
+--------------------------------------------------------------------------------------
+
+{-# INLINABLE mkUpdated_PoolDatum_With_Emergency #-}
+mkUpdated_PoolDatum_With_Emergency :: T.PoolDatumTypo -> Integer -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_Emergency !poolDatum !isEmergency =
+    T.mkPoolDatumTypo (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum ) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) isEmergency (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_DeletingFunds #-}
-mkUpdated_PoolDatum_With_DeletingFunds :: T.PoolDatumTypo -> Integer -> Integer -> T.DatumValidator
-mkUpdated_PoolDatum_With_DeletingFunds poolDatum mergingCount mergingCashedOut =
-    T.mkPoolDatum (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum  - mergingCount) (T.pdTotalCashedOut poolDatum + mergingCashedOut) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+mkUpdated_PoolDatum_With_DeletingFunds :: T.PoolDatumTypo -> Integer -> Integer -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_DeletingFunds !poolDatum !mergingCount !mergingCashedOut =
+    T.mkPoolDatumTypo (T.pdMasterFunders poolDatum) (T.pdFundCount poolDatum  - mergingCount) (T.pdTotalCashedOut poolDatum + mergingCashedOut) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_PoolDatum_With_SendBackFund #-}
-mkUpdated_PoolDatum_With_SendBackFund :: T.PoolDatumTypo -> T.Master -> T.DatumValidator
-mkUpdated_PoolDatum_With_SendBackFund poolDatum master =
+mkUpdated_PoolDatum_With_SendBackFund :: T.PoolDatumTypo -> T.Master -> T.PoolDatumTypo
+mkUpdated_PoolDatum_With_SendBackFund !poolDatum !master =
     let
         !masterFundersAll = T.pdMasterFunders poolDatum
         !masterFunder_others = [ masterFunder | masterFunder <- masterFundersAll,  T.mfMaster masterFunder /= master]
         !masterFunderOld = find (\masterFunder -> T.mfMaster masterFunder == master) masterFundersAll
         !masterFundersNew =
             (case masterFunderOld :: Maybe T.MasterFunder of
-                Just mf ->
+                Just !mf ->
                     T.mkMasterFunder master (T.mfFundAmount mf) T.poolDatum_ClaimedFund (T.mfMinAda mf)
-                _ -> 
+                _ ->
                     traceError "MF"
                 :masterFunder_others)
     in
-        T.mkPoolDatum masterFundersNew (T.pdFundCount poolDatum) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdMinAda poolDatum)
+        T.mkPoolDatumTypo masterFundersNew (T.pdFundCount poolDatum) (T.pdTotalCashedOut poolDatum) (T.pdClosedAt poolDatum) (T.pdIsTerminated poolDatum) (T.pdIsEmergency poolDatum) (T.pdMinAda poolDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_FundDatum_WithNewFundAmountAndMerging #-}
-mkUpdated_FundDatum_WithNewFundAmountAndMerging :: [T.FundDatumTypo] -> Integer -> T.DatumValidator
-mkUpdated_FundDatum_WithNewFundAmountAndMerging fundDatumsToMerge fundAmount =
+mkUpdated_FundDatum_WithNewFundAmountAndMerging :: [T.FundDatumTypo] -> Integer -> T.FundDatumTypo
+mkUpdated_FundDatum_WithNewFundAmountAndMerging !fundDatumsToMerge !fundAmount =
     let
         !fundAmount' = sum [ T.fdFundAmount datum | datum <- fundDatumsToMerge ] + fundAmount
         !cashedout = sum [ T.fdCashedOut datum | datum <- fundDatumsToMerge ]
         !minAda = sum [ T.fdMinAda datum | datum <- fundDatumsToMerge ]
 
-    in  T.mkFundDatum fundAmount' cashedout minAda
+    in  T.mkFundDatumTypo fundAmount' cashedout minAda
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_FundDatum_With_NewClaimRewards #-}
-mkUpdated_FundDatum_With_NewClaimRewards :: T.FundDatumTypo -> Integer -> T.DatumValidator
-mkUpdated_FundDatum_With_NewClaimRewards fundDatum cashedout  =
-    T.mkFundDatum (T.fdFundAmount fundDatum)  (T.fdCashedOut fundDatum + cashedout ) (T.fdMinAda fundDatum) 
+mkUpdated_FundDatum_With_NewClaimRewards :: T.FundDatumTypo -> Integer -> T.FundDatumTypo
+mkUpdated_FundDatum_With_NewClaimRewards !fundDatum !cashedout  =
+    T.mkFundDatumTypo (T.fdFundAmount fundDatum)  (T.fdCashedOut fundDatum + cashedout ) (T.fdMinAda fundDatum)
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE mkUpdated_FundDatum_With_WithSplitFund #-}
-mkUpdated_FundDatum_With_WithSplitFund :: T.FundDatumTypo -> Integer -> T.DatumValidator
-mkUpdated_FundDatum_With_WithSplitFund fundDatum splitFundAmount  =
-    T.mkFundDatum (T.fdFundAmount fundDatum - splitFundAmount)  (T.fdCashedOut fundDatum ) (T.fdMinAda fundDatum) 
+mkUpdated_FundDatum_With_WithSplitFund :: T.FundDatumTypo -> Integer -> T.FundDatumTypo
+mkUpdated_FundDatum_With_WithSplitFund !fundDatum !splitFundAmount  =
+    T.mkFundDatumTypo (T.fdFundAmount fundDatum - splitFundAmount)  (T.fdCashedOut fundDatum ) (T.fdMinAda fundDatum)
 
 --------------------------------------------------------------------------------------
 
@@ -310,7 +333,7 @@ zeroToBBS = emptyByteString --intToBBS 0
 
 {-# INLINEABLE intToBBS #-}
 intToBBS :: Integer -> BuiltinByteString
-intToBBS x
+intToBBS !x
   -- 45 is ASCII code for '-'
   | x < 0 = consByteString 45 $ intToBBS (negate x)
   -- x is single-digit
@@ -319,11 +342,11 @@ intToBBS x
   where
     digitToBS :: Integer -> BuiltinByteString
     -- 48 is ASCII code for '0'
-    digitToBS d = consByteString (d + 48) emptyByteString
+    digitToBS !d = consByteString (d + 48) emptyByteString
 
 {-# INLINABLE txOutRefToBBS #-}
 txOutRefToBBS :: LedgerApiV2.TxOutRef -> BuiltinByteString
-txOutRefToBBS txOutRef =
+txOutRefToBBS !txOutRef =
     let
         idTxOut = LedgerApiV2.txOutRefId txOutRef
         indexTxOut = LedgerApiV2.txOutRefIdx txOutRef
@@ -331,90 +354,127 @@ txOutRefToBBS txOutRef =
 
 {-# INLINABLE flatValueToBBS #-}
 flatValueToBBS :: LedgerApiV2.CurrencySymbol -> LedgerApiV2.TokenName -> Integer -> BuiltinByteString
-flatValueToBBS cs tn am = LedgerApiV2.unCurrencySymbol cs <> LedgerApiV2.unTokenName tn <> intToBBS am
+flatValueToBBS !cs !tn !am = LedgerApiV2.unCurrencySymbol cs <> LedgerApiV2.unTokenName tn <> intToBBS am
 
 {-# INLINABLE txValueToBBS #-}
 txValueToBBS :: LedgerApiV2.Value -> BuiltinByteString
-txValueToBBS value = foldl (<>) zeroToBBS [ flatValueToBBS cs tn am | (cs, tn, am) <- LedgerValue.flattenValue value]
+txValueToBBS !value = foldl (<>) zeroToBBS [ flatValueToBBS cs tn am | (cs, tn, am) <- LedgerValue.flattenValue value]
 
 {-# INLINABLE assetClassToBBS #-}
 assetClassToBBS :: LedgerValue.AssetClass -> BuiltinByteString
-assetClassToBBS ac =
-    let (cs, tn) = LedgerValue.unAssetClass ac
+assetClassToBBS !ac =
+    let !(cs, tn) = LedgerValue.unAssetClass ac
     in  LedgerApiV2.unCurrencySymbol cs <> LedgerApiV2.unTokenName tn
 
 {-# INLINABLE pOSIXTimeToBBS #-}
 pOSIXTimeToBBS :: LedgerApiV2.POSIXTime -> BuiltinByteString
-pOSIXTimeToBBS time = intToBBS $ LedgerApiV2.getPOSIXTime time
+pOSIXTimeToBBS !time = intToBBS $ LedgerApiV2.getPOSIXTime time
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE isToken_With_AC_InValue #-}
 isToken_With_AC_InValue :: LedgerApiV2.Value -> LedgerValue.AssetClass -> Bool
-isToken_With_AC_InValue value ac = LedgerValue.assetClassValueOf value ac >= 1
+isToken_With_AC_InValue !value !ac = LedgerValue.assetClassValueOf value ac >= 1
 
 {-# INLINABLE isToken_With_TN_InValue #-}
 isToken_With_TN_InValue :: LedgerApiV2.Value -> LedgerApiV2.TokenName -> Bool
-isToken_With_TN_InValue value tn = valueOfTokenName value tn >= 1
+isToken_With_TN_InValue !value !tn = getAmtOfTokenName value tn >= 1
 
 {-# INLINABLE isToken_With_CS_InValue #-}
 isToken_With_CS_InValue :: LedgerApiV2.Value -> LedgerApiV2.CurrencySymbol -> Bool
-isToken_With_CS_InValue value cs = valueOfCurrencySymbol value cs >= 1
+isToken_With_CS_InValue !value !cs = getAmtOfCurrencySymbol value cs >= 1
 
 {-# INLINABLE isToken_With_AC_AndAmt_InValue #-}
 isToken_With_AC_AndAmt_InValue :: LedgerApiV2.Value -> LedgerValue.AssetClass -> Integer -> Bool
-isToken_With_AC_AndAmt_InValue value ac amt = LedgerValue.assetClassValueOf value ac == amt
+isToken_With_AC_AndAmt_InValue !value !ac !amt = LedgerValue.assetClassValueOf value ac == amt
 
 ------------------------------------------------------------------------------------------------
 
 {-# INLINABLE isNFT_With_AC_InValue #-}
 isNFT_With_AC_InValue :: LedgerApiV2.Value -> LedgerValue.AssetClass -> Bool
-isNFT_With_AC_InValue value ac = LedgerValue.assetClassValueOf value ac == 1
+isNFT_With_AC_InValue !value !ac = LedgerValue.assetClassValueOf value ac == 1
 
 {-# INLINABLE isNFT_With_TN_InValue #-}
 isNFT_With_TN_InValue :: LedgerApiV2.Value -> LedgerApiV2.TokenName -> Bool
-isNFT_With_TN_InValue value tn = valueOfTokenName value tn == 1
+isNFT_With_TN_InValue !value !tn = getAmtOfTokenName value tn == 1
 
 {-# INLINABLE isNFT_With_CS_InValue #-}
 isNFT_With_CS_InValue :: LedgerApiV2.Value -> LedgerApiV2.CurrencySymbol -> Bool
-isNFT_With_CS_InValue value cs = valueOfCurrencySymbol value cs == 1
+isNFT_With_CS_InValue !value !cs = getAmtOfCurrencySymbol value cs == 1
 
 ------------------------------------------------------------------------------------------------
 
 {-# INLINABLE flattenValue #-}
 flattenValue :: LedgerValue.Value -> [(LedgerApiV2.CurrencySymbol, LedgerApiV2.TokenName, Integer)]
-flattenValue (LedgerValue.Value mp) =
+flattenValue (LedgerValue.Value !mp) =
     let
         !f1 = TxAssocMap.toList mp
-        !f2 = [ ( cs , TxAssocMap.toList mp') | (cs, mp')  <- f1 ]
+        !f2 = [ ( cs , TxAssocMap.toList mp') | (cs, mp') <- f1 ]
         !f3 = [ (cs , tn, amt) | (cs, f4) <- f2, (tn, amt) <- f4 ]
     in
         f3
 
+{-# INLINABLE flattenValueDeleteZeros #-}
+flattenValueDeleteZeros :: LedgerValue.Value -> [(LedgerApiV2.CurrencySymbol, LedgerApiV2.TokenName, Integer)]
+flattenValueDeleteZeros (LedgerValue.Value !mp) =
+    let
+        !f1 = TxAssocMap.toList mp
+        !f2 = [ ( cs , TxAssocMap.toList mp') | (cs, mp') <- f1 ]
+        !f3 = [ (cs , tn, amt) | (cs, f4) <- f2, (tn, amt) <- f4, amt /= 0 ]
+    in
+        f3
+
+{-# INLINABLE sortFlattenValue #-}
+sortFlattenValue :: LedgerValue.Value -> [(LedgerApiV2.CurrencySymbol, LedgerApiV2.TokenName, Integer)]
+sortFlattenValue (LedgerValue.Value !mp) =
+    let
+        sort_CurrencySymbol :: (LedgerApiV2.CurrencySymbol, a) -> (LedgerApiV2.CurrencySymbol, a) -> Ordering
+        sort_CurrencySymbol (!cs1, _) (!cs2, _) = compare cs1 cs2
+
+        sort_TokenName :: (LedgerApiV2.TokenName, a) -> (LedgerApiV2.TokenName, a) -> Ordering
+        sort_TokenName (!tn1, _) (!tn2, _) = compare tn1 tn2
+
+        !f1 = sortBy sort_CurrencySymbol (TxAssocMap.toList mp)
+
+        !f2 = [ ( cs ,  sortBy sort_TokenName  (TxAssocMap.toList mp')) | (cs, mp') <- f1 ]
+
+        !f3 = [ (cs , tn, amt) | (cs, f4) <- f2, (tn, amt) <- f4 ]
+    in
+        f3
+
+
 ------------------------------------------------------------------------------------------------
 
-{-# INLINABLE valueFromCurrencySymbol #-}
+{-# INLINABLE getValueOfAC #-}
+-- | Get the total value of an Aseets Class in the 'Value'.
+getValueOfAC :: LedgerValue.Value -> LedgerValue.AssetClass -> LedgerValue.Value
+getValueOfAC !v !ac =
+    LedgerValue.assetClassValue ac (LedgerValue.assetClassValueOf v ac)
+
+------------------------------------------------------------------------------------------------
+
+{-# INLINABLE getValueOfCurrencySymbol #-}
 -- | Get the total value of a CurrencySymbol in the 'Value'. Doesnt matter the TokenName
-valueFromCurrencySymbol :: LedgerValue.Value -> LedgerApiV2.CurrencySymbol -> LedgerValue.Value
-valueFromCurrencySymbol (LedgerValue.Value mp) cs =
+getValueOfCurrencySymbol :: LedgerValue.Value -> LedgerApiV2.CurrencySymbol -> LedgerValue.Value
+getValueOfCurrencySymbol (LedgerValue.Value !mp) !cs =
     case TxAssocMap.lookup cs mp of
         Nothing -> LedgerAda.lovelaceValueOf 0
         Just mp' -> LedgerValue.Value $ TxAssocMap.singleton cs mp'
 
 ------------------------------------------------------------------------------------------------
 
-{-# INLINABLE valueOfCurrencySymbol #-}
+{-# INLINABLE getAmtOfCurrencySymbol #-}
 -- | Get the quantity of the given CurrencySymbol in the 'Value'. Doesnt matter the TokenName
-valueOfCurrencySymbol :: LedgerValue.Value -> LedgerApiV2.CurrencySymbol -> Integer
-valueOfCurrencySymbol value cs =
+getAmtOfCurrencySymbol :: LedgerValue.Value -> LedgerApiV2.CurrencySymbol -> Integer
+getAmtOfCurrencySymbol !value !cs =
     TxFold.foldl (+) 0 [ am | (cs', _, am) <- flattenValue value, cs' == cs ]
 
 ------------------------------------------------------------------------------------------------
 
-{-# INLINABLE valueOfTokenName #-}
+{-# INLINABLE getAmtOfTokenName #-}
 -- | Get the quantity of the given TokenName in the 'Value'. Doesnt matter the CurrencySymbol
-valueOfTokenName :: LedgerValue.Value -> LedgerApiV2.TokenName -> Integer
-valueOfTokenName value tn =
+getAmtOfTokenName :: LedgerValue.Value -> LedgerApiV2.TokenName -> Integer
+getAmtOfTokenName !value !tn =
     TxFold.foldl (+) 0 [ am | (_, tn', am) <- flattenValue value, tn' == tn ]
 
 ------------------------------------------------------------------------------------------------
@@ -422,35 +482,34 @@ valueOfTokenName value tn =
 {-# INLINABLE getCurrencySymbol_Of_TokenName_InValue #-}
 -- | Get the CurrencySymbol of the given TokenName in the 'Value'.
 getCurrencySymbol_Of_TokenName_InValue :: LedgerValue.Value -> LedgerApiV2.TokenName -> LedgerApiV2.CurrencySymbol
-getCurrencySymbol_Of_TokenName_InValue value tn =
+getCurrencySymbol_Of_TokenName_InValue !value !tn =
     head [ cs | (cs, tn', _) <- flattenValue value, tn' == tn ]
-
 
 ------------------------------------------------------------------------------------------------
 
 {-# INLINABLE createValueAddingTokensOfCurrencySymbol #-}
 createValueAddingTokensOfCurrencySymbol :: LedgerValue.AssetClass -> LedgerApiV2.CurrencySymbol -> Bool -> LedgerApiV2.Value -> Integer -> LedgerApiV2.Value
-createValueAddingTokensOfCurrencySymbol ac cs acIsWithoutTokenName value cantidad = 
-    if not acIsWithoutTokenName then 
+createValueAddingTokensOfCurrencySymbol !ac !cs !acIsWithoutTokenName !value !cantidad =
+    if not acIsWithoutTokenName then
         LedgerValue.assetClassValue ac cantidad
-    else 
+    else
         let
             !tokenOfCurrencySymbol = [ (tn, am) | (cs', tn, am) <- flattenValue value, cs' == cs ]
 
             compareTokenName :: (LedgerApiV2.TokenName, Integer) -> (LedgerApiV2.TokenName, Integer) -> Ordering
-            compareTokenName (tn1, _) (tn2, _)
+            compareTokenName (!tn1, _) (!tn2, _)
                 | tn1 < tn2 = LT
                 | otherwise = GT
 
             !tokenOfCurrencySymbol_Ordered = sortBy compareTokenName tokenOfCurrencySymbol
 
             sumarTokens :: [(LedgerApiV2.TokenName, Integer)] -> Integer -> LedgerApiV2.Value
-            sumarTokens [] left = 
+            sumarTokens [] !left =
                 if left > 0 then do
                     traceError "TOKENS"
-                else 
+                else
                     LedgerAda.lovelaceValueOf 0
-            sumarTokens list left =
+            sumarTokens !list !left =
                 let
                     (tn, am) = head list
                     !harvest_AC = LedgerValue.AssetClass (cs, tn)
@@ -466,22 +525,47 @@ createValueAddingTokensOfCurrencySymbol ac cs acIsWithoutTokenName value cantida
 
 {-# INLINABLE valueIncludesValue #-}
 valueIncludesValue :: LedgerApiV2.Value -> LedgerApiV2.Value -> Bool
-valueIncludesValue value valueToFind  =
+valueIncludesValue !value !valueToFind  =
     let
         !valueToFind' = flattenValue valueToFind
     in
+        all (\(cs, tn, amount) ->
+                let
+                    !ac = LedgerValue.AssetClass (cs, tn)
+                in 
+                    LedgerValue.assetClassValueOf value ac >= amount
+            ) valueToFind'
+
+{-# INLINABLE valueEqualsValue #-}
+valueEqualsValue :: LedgerApiV2.Value -> LedgerApiV2.Value -> Bool
+valueEqualsValue !value1 !value2 = 
+    let
+        !value1' = flattenValueDeleteZeros value1
+        !value2' = flattenValueDeleteZeros value2
+    --     -- !value1' = sortFlattenValue value1
+    --     -- !value2' = sortFlattenValue value2
+    --     -- sortFlattenValue
+    in
+        -- value1' == value2' &&
+        length value1' == length value2' &&
+        -- all (\(cs, tn, amount) ->
+        --         isJust (find (\(cs', tn', amount') -> cs == cs' && tn == tn' && amount == amount') value2')
+        --     ) value1'   &&
         all (\(cs, tn, amount) -> 
                 let 
                     !ac = LedgerValue.AssetClass (cs, tn)
-                in LedgerValue.assetClassValueOf value ac >= amount
-            ) valueToFind'
+                in 
+                    LedgerValue.assetClassValueOf value2 ac == amount
+            ) value1'
+
+        -- value1 == value2
 
 -------------------------------------------------------------------------------------------
 
 
 {-# INLINABLE calculateMinAda #-}
 calculateMinAda :: Integer -> Integer -> Integer -> Bool -> Integer
-calculateMinAda numAssets sumAssetNameLengths numPIDs isHash =
+calculateMinAda !numAssets !sumAssetNameLengths !numPIDs !isHash =
     let
         -- const numPIDs=1
         -- The number of policy scripts referenced in the UTxO. If there is only one type of token in the UTxO, then this is just 1.
@@ -507,7 +591,7 @@ calculateMinAda numAssets sumAssetNameLengths numPIDs isHash =
         !hash = if isHash then (10 :: Integer) else 0 --si hay data hash suman 10 words
 
         roundupBytesToWords :: Integer -> Integer
-        roundupBytesToWords number = TxRatio.truncate ( TxRatio.unsafeRatio (number + 7)  8)
+        roundupBytesToWords !number = TxRatio.truncate ( TxRatio.unsafeRatio (number + 7)  8)
 
         !sizeWords = 6 + roundupBytesToWords (numAssets * 12 + sumAssetNameLengths + numPIDs * pidSize )
 
@@ -522,7 +606,7 @@ calculateMinAda numAssets sumAssetNameLengths numPIDs isHash =
 
 {-# INLINABLE calculateMinAdaOfValue #-}
 calculateMinAdaOfValue :: LedgerApiV2.Value -> Bool -> Integer
-calculateMinAdaOfValue value isHash =
+calculateMinAdaOfValue !value !isHash =
     let
         -- !valueWithOutAda = value <> negate ( LedgerValue.adaOnlyValue value)
         !valueWithOutAda = value
@@ -536,21 +620,20 @@ calculateMinAdaOfValue value isHash =
 
         !minAda =  calculateMinAda numAssets sumAssetNameLengths numPIDs isHash
     in
-        minAda 
+        minAda
 
 ------------------------------------------------------------------------------------------------
 
 {-# INLINABLE getFundAmountCanUse_in_FundDatum #-}
 getFundAmountCanUse_in_FundDatum :: T.FundDatumTypo -> Integer
-getFundAmountCanUse_in_FundDatum fundDatum =
+getFundAmountCanUse_in_FundDatum !fundDatum =
     T.fdFundAmount fundDatum - T.fdCashedOut fundDatum
-
 
 --------------------------------------------------------------------------------------
 
 {-# INLINABLE getRewardsPerInvest #-}
 getRewardsPerInvest :: LedgerApiV2.POSIXTime -> Maybe LedgerApiV2.POSIXTime -> [T.InterestRate] -> Maybe LedgerApiV2.POSIXTime -> LedgerApiV2.POSIXTime -> LedgerApiV2.POSIXTime -> Integer -> Integer -> Integer
-getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime invest rewardsNotClaimed =
+getRewardsPerInvest !deadline !closedAt !interestRates !lastClaim !now !depositTime !invest !rewardsNotClaimed =
     case lastClaim of
         Nothing     -> getRewards $ LedgerApiV2.getPOSIXTime (upperTime - lowerTime upperTime depositTime)
         Just lClaim -> getRewards $ LedgerApiV2.getPOSIXTime (upperTime - lowerTime upperTime lClaim)
@@ -570,7 +653,7 @@ getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime in
             upperTime'
         else
             depositOrLClaim
-                    
+
     -- El interes es deacuerdo a la fecha total que lleva de inversion
     diffForInterestRate :: LedgerApiV2.POSIXTime
     !diffForInterestRate = upperTime - depositTime
@@ -583,7 +666,7 @@ getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime in
 
     --Days to LedgerApiV2.POSIXTime
     days :: Integer -> LedgerApiV2.POSIXTime
-    days n = LedgerApiV2.POSIXTime (n * msPerDay)
+    days !n = LedgerApiV2.POSIXTime (n * msPerDay)
 
     -- Explicacion de la formula
 
@@ -617,7 +700,7 @@ getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime in
     -- (2              * 31536000000/2   * 100_000_000)  `divide` (31536000000) = 100_000_000 = 100 ADA
 
     getRewards :: Integer -> Integer
-    getRewards duration =
+    getRewards !duration =
         let
             !rewards = (getInterestRate interestRates * duration * invest) `divide` msPerYear
         in
@@ -627,13 +710,13 @@ getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime in
                 rewards
 
     isDiffLessThanMinDays :: LedgerApiV2.POSIXTime -> Maybe Integer -> Bool
-    isDiffLessThanMinDays diff' minDays =
+    isDiffLessThanMinDays !diff' !minDays =
         case minDays of
             Nothing -> True -- el ultimo valor de la lista de intereses no tiene minDays, es Nothing, para que toda diff caiga ahí si no cae en otro grupo
             Just d  -> diff' <= days d
 
     getInterestRate :: [T.InterestRate]  -> Integer
-    getInterestRate interestRates' =
+    getInterestRate !interestRates' =
         case interestRates' of
             []   -> traceError "INT" -- no debería suceder que no encuentra un rate adecuado...
             x:xs -> if isDiffLessThanMinDays diffForInterestRate (T.iMinDays x) then
@@ -645,8 +728,8 @@ getRewardsPerInvest deadline closedAt interestRates lastClaim now depositTime in
 
 {-# INLINABLE getFundAmountsRemains_ForMaster #-}
 getFundAmountsRemains_ForMaster :: T.PoolDatumTypo -> T.Master -> (Integer, Integer)
-getFundAmountsRemains_ForMaster poolDatum master =
-    let 
+getFundAmountsRemains_ForMaster !poolDatum !master =
+    let
         !masterFundersAll = T.pdMasterFunders poolDatum
         ---------------------
         !totalFunding = sum [ T.mfFundAmount mf | mf <- masterFundersAll ]
@@ -656,22 +739,22 @@ getFundAmountsRemains_ForMaster poolDatum master =
         !totalMinAda = sum [ T.mfMinAda mf | mf <- masterFundersAll ]
         ---------------------
         !masterFunder = find  (\mF' -> T.mfMaster mF' == master) masterFundersAll
-    in  
+    in
         case masterFunder of
             Nothing -> traceError "MF"
             Just mf ->
                 if T.mfClaimedFund mf == T.poolDatum_ClaimedFund then
                     traceError "MFGB"
                 else
-                    let 
-                        !masterFundAmount = T.mfFundAmount mf 
+                    let
+                        !masterFundAmount = T.mfFundAmount mf
                         !masterParticipation = (masterFundAmount * 1000000000) `divide` totalFunding
                         !masterMinAda = T.mfMinAda mf
                         !masterParticipationAda = (masterMinAda * 1000000000) `divide` totalMinAda
-                    in  
+                    in
                         (
-                            (masterParticipation * remaindFunds) `divide` 1000000000, 
+                            (masterParticipation * remaindFunds) `divide` 1000000000,
                             (masterParticipationAda * totalMinAda) `divide` 1000000000
-                        ) 
+                        )
 
 -------------------------------------------------------------------------------------------

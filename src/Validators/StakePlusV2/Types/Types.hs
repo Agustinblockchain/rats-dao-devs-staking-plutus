@@ -20,6 +20,7 @@
 {-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE BangPatterns #-}
+-- {-# LANGUAGE Strict #-}
 {- HLINT ignore "Use camelCase" -}
 ------------------------------------------------------------------------------------------
 module Validators.StakePlusV2.Types.Types where
